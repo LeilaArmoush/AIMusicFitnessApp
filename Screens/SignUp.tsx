@@ -1,10 +1,13 @@
 import React, { useState } from 'react';
 import { View, TextInput, Button, StyleSheet, Alert } from 'react-native';
 import { handleSignUp } from '../firebaseconfig'; // Import your handleSignUp function
+import { useNavigation } from '@react-navigation/native';
 
 const SignUpScreen = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const navigation = useNavigation(); // Ensure you import useNavigation
+
 
   const handleSignUpPress = async () => {
     try {
@@ -14,6 +17,11 @@ const SignUpScreen = () => {
     } catch (error) {
       Alert.alert('Sign Up Failed', error.message);
     }
+  };
+
+  const navigateToSignIn = () => {
+    // Use navigation to navigate to the Sign In screen
+    navigation.navigate('SignIn');
   };
 
   return (
@@ -32,6 +40,7 @@ const SignUpScreen = () => {
         value={password}
       />
       <Button title="Sign Up" onPress={handleSignUpPress} />
+      <Button title="Go to Sign In" onPress={navigateToSignIn} />
     </View>
   );
 };

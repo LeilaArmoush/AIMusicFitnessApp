@@ -2,6 +2,7 @@ import React, {useState, useEffect} from "react";
 import { View, Text, StyleSheet, Button } from "react-native";
 import CircleProgressBar from "react-native-progress-circle";
 import { useRoute } from "@react-navigation/native";
+import database from '@react-native-firebase/database';
 
 
 const IntervalTimer = () => {
@@ -17,7 +18,24 @@ const IntervalTimer = () => {
     const route = useRoute();
     const values = route.params ?? {};
    
-    
+    const [databaseData, setDatabaseData] = useState({}); // State to store data from the database
+
+    useEffect(() => {
+        const fetchData = async () => {
+            try {
+                const snapshot = await database()
+                    .ref('/Workout/0')
+                    .once('value');
+
+                // Update state with fetched data
+                setDatabaseData(snapshot.val() || {});
+            } catch (error) {
+                console.error('Error fetching data:', error);
+            }
+        };
+        fetchData();
+    }, [isIntervalRunning, remainingTime, currentInterval, secondSegment, percent, intervalLength]);
+
     useEffect(() => {
         if (isIntervalRunning) {
             const interval = setInterval(() => {
@@ -59,9 +77,10 @@ const IntervalTimer = () => {
         <View style={styles.container}>
              <View>
     </View>
-    <Text>Minutes: {values.minutes}</Text>
-<Text>Seconds: {values.seconds}</Text>
-<Text>Tempo: {values.tempo}</Text>
+        <Text>Minutes: {databaseData.minutes !== undefined ? databaseData.minutes : 'N/A'}</Text>
+            <Text>Seconds: {databaseData.seconds !== undefined ? databaseData.seconds : 'N/A'}</Text>
+            <Text>Tempo: {databaseData.tempo !== undefined ? databaseData.tempo : 'N/A'}</Text>
+
             <CircleProgressBar
                 percent={percent}
                 radius={70}

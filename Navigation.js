@@ -49,7 +49,7 @@ export default function Navigation() {
               options={{ title: 'Signup' }}
             />
             <Stack.Screen
-              name="Login"
+              name="SignIn"
               component={SignInScreen}
               options={{ headerShown: false }}
             />
