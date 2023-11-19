@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, Button } from "react-native";
 import CircleProgressBar from "react-native-progress-circle";
 import { useRoute } from "@react-navigation/native";
 
+
 const IntervalTimer = () => {
     const restTime = 60;
     const intervalTime = 90;

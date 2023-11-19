@@ -43,16 +43,17 @@ export default function Navigation() {
           <Stack.Screen name="App" component={TabGroup} />
         ) : (
           <>
+           <Stack.Screen
+              name="Signup"
+              component={SignupScreen}
+              options={{ title: 'Signup' }}
+            />
             <Stack.Screen
               name="Login"
               component={SignInScreen}
               options={{ headerShown: false }}
             />
-            <Stack.Screen
-              name="Signup"
-              component={SignupScreen}
-              options={{ title: 'Signup' }}
-            />
+           
           </>
         )}
       </Stack.Navigator>
