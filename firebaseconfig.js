@@ -1,6 +1,7 @@
 import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword } from '@firebase/auth';
 import { initializeApp } from '@firebase/app';
-import '@firebase/firestore';
+import { getFirestore } from "firebase/firestore";
+
 
 const firebaseConfig = {
   apiKey: "AIzaSyDQgul1UxStJ3vQMGvLQ4XfE6hWyJJX2bA",
@@ -11,7 +12,6 @@ const firebaseConfig = {
   messagingSenderId: "864751255993",
   appId: "1:864751255993:web:88133fd6ce3cf9116a3668",
   measurementId: "G-7D9FQRZ5KK",
-  databaseURL: "https://aimusic-b0bd1-default-rtdb.firebaseio.com",
 };
 
 let firebaseInitialized = false;
@@ -19,11 +19,15 @@ let firebaseInitialized = false;
 export const initializeFirebase = () => {
   if (!firebaseInitialized) {
     initializeApp(firebaseConfig);
+    
     firebaseInitialized = true;
   }
 };
 
-initializeFirebase();
+const app = initializeFirebase();
+const db = getFirestore(app);
+
+export { db }
 
 export const auth = getAuth();
 

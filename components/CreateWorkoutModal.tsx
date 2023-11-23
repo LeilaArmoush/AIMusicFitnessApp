@@ -10,7 +10,7 @@ const CreateWorkoutModal = ({ visible, onAddWorkout, onCancel }) => {
   const handleAddWorkout = () => {
     onAddWorkout(workoutName);
     setWorkoutName('');
-    navigation.navigate('WorkoutListScreen');
+    navigation.navigate('WorkoutList');
   };
 
   return (

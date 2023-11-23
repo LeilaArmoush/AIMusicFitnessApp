@@ -5,7 +5,7 @@ import { createStackNavigator } from "@react-navigation/stack";
 import SignInScreen from './Screens/SignIn'; // Your login screen component
 import Planner from './Screens/Planner';
 import Timer from './Screens/Timer';
-import WorkoutListScreen from "./Screens/WorkoutListScreen";
+import WorkoutSelection from "./Screens/WorkoutSelection";
 import { initializeFirebase, auth } from './firebaseconfig'; // Adjust the import path accordingly
 import SignupScreen from './Screens/SignUp'; // Import the new SignupScreen
 
@@ -18,7 +18,7 @@ function TabGroup() {
     <Tab.Navigator>
       <Tab.Screen name="Planner" component={Planner} />
       <Tab.Screen name="Timer" component={Timer} />
-      <Tab.Screen name='WorkoutListScreen' component={WorkoutListScreen} />
+      <Tab.Screen name='WorkoutSelection' component={WorkoutSelection} />
     </Tab.Navigator>
   );
 }

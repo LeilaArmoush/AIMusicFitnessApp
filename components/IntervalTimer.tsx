@@ -1,40 +1,46 @@
-import React, {useState, useEffect} from "react";
+import React, { useState, useEffect } from "react";
 import { View, Text, StyleSheet, Button } from "react-native";
 import CircleProgressBar from "react-native-progress-circle";
 import { useRoute } from "@react-navigation/native";
-import database from '@react-native-firebase/database';
-
+import { db } from '../firebaseconfig'; // Import your Firestore database instance
+import { collection, getDocs } from "firebase/firestore"; 
 
 const IntervalTimer = () => {
-    const restTime = 60;
-    const intervalTime = 90;
     const [isIntervalRunning, setIsIntervalRunning] = useState(false);
     const [currentInterval, setCurrentInterval] = useState("interval");
     const [remainingTime, setRemainingTime] = useState(60);
     const [percent, setPercent] = useState(100);
-    const [ intervalLength, setIntervalLength ] = useState(60);
+    const [intervalLength, setIntervalLength] = useState(60);
+  
+    const [secondSegment, setSecondSegment] = useState(100 / intervalLength);
+    
+  useEffect(() => {
+    const fetchData = async () => {
+        try {
+            const querySnapshot = (await getDocs(collection(db, "CouchTo5k")));
 
-    const [ secondSegment, setSecondSegment ] = useState(100/intervalLength);
-    const route = useRoute();
-    const values = route.params ?? {};
-   
-    const [databaseData, setDatabaseData] = useState({}); // State to store data from the database
+            // Extract the data from the first document in the collection (assuming only one document)
+            const data = querySnapshot.docs[0].data();
 
-    useEffect(() => {
-        const fetchData = async () => {
-            try {
-                const snapshot = await database()
-                    .ref('/Workout/0')
-                    .once('value');
+            // Update state with fetched data
+            setDatabaseDataRep(data[0] || {});
+            setDatabaseDataRest(data[1] || {});
+        } catch (error) {
+            console.error('Error fetching data:', error);
+        }
+    };
+    fetchData();
+}, [isIntervalRunning, remainingTime, currentInterval, secondSegment, percent, intervalLength]);
+ 
 
-                // Update state with fetched data
-                setDatabaseData(snapshot.val() || {});
-            } catch (error) {
-                console.error('Error fetching data:', error);
-            }
-        };
-        fetchData();
-    }, [isIntervalRunning, remainingTime, currentInterval, secondSegment, percent, intervalLength]);
+  const route = useRoute();
+  const values = route.params ?? {};
+
+  const [databaseDataRep, setDatabaseDataRep] = useState({});
+  const [databaseDataRest, setDatabaseDataRest] = useState({});
+
+  const restTime = databaseDataRest.seconds;
+  const intervalTime = databaseDataRep.seconds;
 
     useEffect(() => {
         if (isIntervalRunning) {
@@ -77,10 +83,7 @@ const IntervalTimer = () => {
         <View style={styles.container}>
              <View>
     </View>
-        <Text>Minutes: {databaseData.minutes !== undefined ? databaseData.minutes : 'N/A'}</Text>
-            <Text>Seconds: {databaseData.seconds !== undefined ? databaseData.seconds : 'N/A'}</Text>
-            <Text>Tempo: {databaseData.tempo !== undefined ? databaseData.tempo : 'N/A'}</Text>
-
+            <Text>Seconds: {databaseDataRep.seconds !== undefined ? databaseDataRep.seconds: 'N/A'}</Text>
             <CircleProgressBar
                 percent={percent}
                 radius={70}
