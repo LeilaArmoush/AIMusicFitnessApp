@@ -4,29 +4,38 @@ import CircleProgressBar from "react-native-progress-circle";
 import { useRoute } from "@react-navigation/native";
 import { db } from '../firebaseconfig'; // Import your Firestore database instance
 import { ref, get } from 'firebase/database';
+import { activateKeepAwakeAsync, deactivateKeepAwake } from 'expo-keep-awake';
+import * as BackgroundFetch from 'expo-background-fetch';
+import * as TaskManager from 'expo-task-manager';
+import { useNavigation } from "@react-navigation/native";
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
+const BACKGROUND_FETCH_TASK = 'background-fetch-task';
 
 const IntervalTimer = () => {
   const [isIntervalRunning, setIsIntervalRunning] = useState(false);
-  const [currentInterval, setCurrentInterval] = useState("interval");
+  const [currentInterval, setCurrentInterval] = useState("Run");
   const [remainingTime, setRemainingTime] = useState(0);
   const [percent, setPercent] = useState(100);
   const [intervalLength, setIntervalLength] = useState(0);
   const [secondSegment, setSecondSegment] = useState(0);
   const [data, setData] = useState([]); // State to store fetched data
   const [currentIndex, setCurrentIndex] = useState(0);
+  const [intervalCount, setIntervalCount] = useState(0);
 
   const route = useRoute();
-  const values = route.params ?? {};
+  const navigation = useNavigation();
 
+  const workoutTitle = route.params?.workoutTitle;
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const dataRef = ref(db, 'Week1');
+        const dataRef = ref(db, 'Workouts/' + workoutTitle +'/');
         const snapshot = await get(dataRef);
 
         if (snapshot.exists()) {
           const dataArray = Object.values(snapshot.val());
+          setIntervalCount(dataArray.length -1)
           setData(dataArray);
           setCurrentIndex(0);
           setRemainingTime(dataArray[0].Seconds || 0);
@@ -56,7 +65,7 @@ const IntervalTimer = () => {
           if (nextIndex < data.length) {
             const nextItem = data[nextIndex];
             setCurrentIndex(nextIndex);
-            setCurrentInterval(nextItem.Rep ? "interval" : "rest");
+            setCurrentInterval(nextItem.Rep ? "Run" : "Walk");
             setRemainingTime(nextItem.Seconds || 0);
             setPercent(100);
             setIntervalLength(nextItem.Seconds || 0);
@@ -71,29 +80,33 @@ const IntervalTimer = () => {
     }
   }, [isIntervalRunning, remainingTime, secondSegment, currentIndex, data]);
 
-  const startTimer = () => {
+  const startTimer = async () => {
     setIsIntervalRunning(true);
   };
 
-  const stopTimer = () => {
+  const stopTimer = async () => {
     setIsIntervalRunning(false);
+  };
+  
+  const formatTime = (seconds) => {
+    const minutes = Math.floor(seconds / 60);
+    const remainingSeconds = seconds % 60;
+    return `${minutes}:${remainingSeconds < 10 ? "0" : ""}${remainingSeconds}`;
   };
 
   return (
     <View style={styles.container}>
-      <View></View>
-      <Text>Seconds: {remainingTime !== undefined ? remainingTime : 'N/A'}</Text>
+      <Text>{ workoutTitle }</Text>
+      <Text>{currentInterval + ':'} { currentIndex + 1} {'/' + intervalCount }</Text>
       <CircleProgressBar
         percent={percent}
         radius={70}
         borderWidth={20}
-        color={currentInterval === "interval" ? "#64FAC3" : "#1A73E9"}
+        color={currentInterval === "Run" ? "#64FAC3" : "#1A73E9"}
       />
-      <Text>{values[1]}</Text>
       <Text style={styles.text}>
-        {currentInterval}: {remainingTime} seconds remaining
+        {currentInterval}: {formatTime(remainingTime)} remaining
       </Text>
-
       <View style={styles.buttons}>
         <Button title="Start" onPress={startTimer} />
         <Button title="Pause" onPress={stopTimer} />
@@ -110,6 +123,7 @@ const styles = StyleSheet.create({
   },
   text: {
     fontSize: 24,
+
     marginTop: 20,
   },
   buttons: {
@@ -119,3 +133,9 @@ const styles = StyleSheet.create({
 });
 
 export default IntervalTimer;
+//TODO:: Update to make timer run in the background
+//TaskManager.defineTask(BACKGROUND_FETCH_TASK, async () => {
+  // Implement your background task logic here
+  // For example, you can update a timestamp in AsyncStorage to keep the app alive
+ // return BackgroundFetch.Result.NewData;
+//});
