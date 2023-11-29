@@ -10,9 +10,8 @@ import * as TaskManager from 'expo-task-manager';
 import { useNavigation } from "@react-navigation/native";
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-const BACKGROUND_FETCH_TASK = 'background-fetch-task';
-
 const IntervalTimer = () => {
+  const route = useRoute();
   const [isIntervalRunning, setIsIntervalRunning] = useState(false);
   const [currentInterval, setCurrentInterval] = useState("Run");
   const [remainingTime, setRemainingTime] = useState(0);
@@ -22,20 +21,22 @@ const IntervalTimer = () => {
   const [data, setData] = useState([]); // State to store fetched data
   const [currentIndex, setCurrentIndex] = useState(0);
   const [intervalCount, setIntervalCount] = useState(0);
+  const [workoutComplete, isWorkoutComplete] = useState(false)
+  const [workoutTitle, setWorkoutTitle] = useState(route.params?.workoutTitle);
 
-  const route = useRoute();
   const navigation = useNavigation();
 
-  const workoutTitle = route.params?.workoutTitle;
   useEffect(() => {
+
     const fetchData = async () => {
       try {
         const dataRef = ref(db, 'Workouts/' + workoutTitle +'/');
         const snapshot = await get(dataRef);
+        console.log('database:' + workoutTitle)
 
         if (snapshot.exists()) {
           const dataArray = Object.values(snapshot.val());
-          setIntervalCount(dataArray.length -1)
+          setIntervalCount(dataArray.length)
           setData(dataArray);
           setCurrentIndex(0);
           setRemainingTime(dataArray[0].Seconds || 0);
@@ -49,9 +50,10 @@ const IntervalTimer = () => {
         console.error('Error fetching data:', error);
       }
     };
-
-    fetchData();
-  }, []); // Empty dependency array ensures the effect runs only once on mount
+    if (workoutTitle) {
+      fetchData();
+    }
+  }, [workoutTitle]);
 
   useEffect(() => {
     if (isIntervalRunning) {
@@ -72,6 +74,14 @@ const IntervalTimer = () => {
             setSecondSegment(100 / (nextItem.Seconds || 1)); // Prevent division by zero
           } else {
             setIsIntervalRunning(false); // Stop the timer if no more items
+            isWorkoutComplete(true)
+            setIntervalCount(data.length)
+            setData([]);
+            setRemainingTime(0);
+            setPercent(100);
+            setIntervalLength(0);
+            setSecondSegment(1); // Prevent division by zero
+
           }
         }
       }, 1000);
@@ -87,13 +97,25 @@ const IntervalTimer = () => {
   const stopTimer = async () => {
     setIsIntervalRunning(false);
   };
+
+  const clearWorkout = async () => {
+    // You can add logic to clear the workout data from your storage or database
+    // For example, if using AsyncStorage, you can use the following:
+    try {
+      await AsyncStorage.removeItem(workoutTitle); // Change 'yourWorkoutDataKey' to your actual storage key
+      console.log('Workout data cleared.');
+      // You may also want to reset state variables here
+    } catch (error) {
+      console.error('Error clearing workout data:', error);
+    }
+  };
   
   const formatTime = (seconds) => {
     const minutes = Math.floor(seconds / 60);
     const remainingSeconds = seconds % 60;
     return `${minutes}:${remainingSeconds < 10 ? "0" : ""}${remainingSeconds}`;
   };
-
+  {
   return (
     <View style={styles.container}>
       <Text>{ workoutTitle }</Text>
@@ -107,13 +129,18 @@ const IntervalTimer = () => {
       <Text style={styles.text}>
         {currentInterval}: {formatTime(remainingTime)} remaining
       </Text>
-      <View style={styles.buttons}>
-        <Button title="Start" onPress={startTimer} />
+      <View style={[styles.buttons, {opacity: workoutComplete ? 0 : 100}]}>
+        <Button title="Start" onPress={startTimer}/>
         <Button title="Pause" onPress={stopTimer} />
       </View>
+      <View style={[{opacity: workoutComplete ? 100 : 0}]}>
+      <Text>{"CONGRATULATIONS YOU HAVE COMPLETED THE WORKOUT"}</Text>
+      <Button title="Clear Workout" onPress={clearWorkout} />
+    </View>
     </View>
   );
 };
+}
 
 const styles = StyleSheet.create({
   container: {

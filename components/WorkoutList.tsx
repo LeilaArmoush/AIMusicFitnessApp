@@ -3,11 +3,14 @@ import { View, Text, StyleSheet, FlatList, TouchableOpacity } from 'react-native
 import { db } from '../firebaseconfig';
 import { ref, get } from 'firebase/database';
 import { useNavigation } from '@react-navigation/native';
+import { useRoute } from "@react-navigation/native";
 
 const WorkoutList = ({  }) => {
 
   const navigation = useNavigation();
+  const route = useRoute();
 
+  const [workoutTitle, setWorkoutTitle] = useState(route.params?.workoutTitle);
 
   const fetchWorkoutKeys = async () => {
     try {
@@ -40,7 +43,8 @@ const WorkoutList = ({  }) => {
   }, []);
 
   const handleWorkoutPress = (title) => {
-    navigation.navigate('Timer', { workoutTitle: title })
+    setWorkoutTitle(title);
+    navigation.navigate('Timer', { workoutTitle: title})
     console.log('Selected Workout Data:', title);
   };
 
