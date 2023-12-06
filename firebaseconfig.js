@@ -2,7 +2,6 @@ import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword } f
 import { initializeApp } from '@firebase/app';
 import { getDatabase } from "firebase/database";
 
-
 const firebaseConfig = {
   apiKey: "AIzaSyDQgul1UxStJ3vQMGvLQ4XfE6hWyJJX2bA",
   authDomain: "aimusic-b0bd1.firebaseapp.com",
@@ -25,9 +24,10 @@ export const initializeFirebase = () => {
 };
 
 const app = initializeFirebase();
+
 const db = getDatabase(app);
 
-export { db }
+export { db, app}
 
 export const auth = getAuth();
 

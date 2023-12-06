@@ -103,6 +103,7 @@ const IntervalTimer = () => {
     // For example, if using AsyncStorage, you can use the following:
     try {
       await AsyncStorage.removeItem(workoutTitle); // Change 'yourWorkoutDataKey' to your actual storage key
+      setWorkoutTitle('');
       console.log('Workout data cleared.');
       // You may also want to reset state variables here
     } catch (error) {
@@ -132,6 +133,7 @@ const IntervalTimer = () => {
       <View style={[styles.buttons, {opacity: workoutComplete ? 0 : 100}]}>
         <Button title="Start" onPress={startTimer}/>
         <Button title="Pause" onPress={stopTimer} />
+        <Button title="Clear Workout" onPress={clearWorkout} />
       </View>
       <View style={[{opacity: workoutComplete ? 100 : 0}]}>
       <Text>{"CONGRATULATIONS YOU HAVE COMPLETED THE WORKOUT"}</Text>
