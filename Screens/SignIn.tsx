@@ -1,6 +1,9 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { View, TextInput, Button, StyleSheet, Alert } from 'react-native';
 import { handleSignIn } from '../firebaseconfig'; // Import your handleSignIn function
+import { useNavigation } from '@react-navigation/native';
+
+const navigation = useNavigation()
 
 const SignInScreen = () => {
   const [email, setEmail] = useState('');
@@ -9,8 +12,8 @@ const SignInScreen = () => {
   const handleSignInPress = async () => {
     try {
       await handleSignIn(email, password);
-      // You can navigate to another screen upon successful sign-in
-        
+     // navigation.navigate('WorkoutSelection');
+          
     } catch (error) {
       Alert.alert('Sign In Failed', error.message);
     }

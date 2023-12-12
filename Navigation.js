@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect} from 'react';
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { NavigationContainer } from "@react-navigation/native";
 import { createStackNavigator } from "@react-navigation/stack";
@@ -6,6 +6,7 @@ import SignInScreen from './Screens/SignIn'; // Your login screen component
 import Planner from './Screens/Planner';
 import Timer from './Screens/Timer';
 import WorkoutSelection from "./Screens/WorkoutSelection";
+import UserLocation from "./Screens/UserLocation";
 import { initializeFirebase, auth } from './firebaseconfig'; // Adjust the import path accordingly
 import SignupScreen from './Screens/SignUp'; // Import the new SignupScreen
 
@@ -19,6 +20,7 @@ function TabGroup() {
       <Tab.Screen name="Planner" component={Planner} />
       <Tab.Screen name="Timer" component={Timer} />
       <Tab.Screen name='WorkoutSelection' component={WorkoutSelection} />
+      <Tab.Screen name='UserLocation' component={UserLocation} />
     </Tab.Navigator>
   );
 }
@@ -52,8 +54,7 @@ export default function Navigation() {
               name="SignIn"
               component={SignInScreen}
               options={{ headerShown: false }}
-            />
-           
+            /> 
           </>
         )}
       </Stack.Navigator>

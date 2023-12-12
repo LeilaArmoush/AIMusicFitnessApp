@@ -1,6 +1,7 @@
 import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword } from '@firebase/auth';
 import { initializeApp } from '@firebase/app';
 import { getDatabase } from "firebase/database";
+import { ref, set } from 'firebase/database';
 
 const firebaseConfig = {
   apiKey: "AIzaSyDQgul1UxStJ3vQMGvLQ4XfE6hWyJJX2bA",
@@ -55,9 +56,22 @@ export const handleSignIn = async (email, password) => {
 
     // Access the signed-in user information
     const user = userCredential.user;
+ //   const currentUser = firebase.auth().currentUser;
+    const userProfile = {
+      uid: user.uid,
+      email: user.email,
+      displayName: user.displayName,
+      // Add additional data
+      customField: 'some value',
+    }
+
+
+  // Store the user profile under a "users" node
+   //db.ref('users/' + user.uid).set(userProfile);
+   const userData = ref(db, 'users/');
+   const snapshot = await set(userData, userProfile);
 
     console.log('User signed in:', user.email);
-
     return user;
   } catch (error) {
     console.error(error);
