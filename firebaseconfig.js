@@ -1,6 +1,8 @@
 import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword } from '@firebase/auth';
 import { initializeApp } from '@firebase/app';
 import { getDatabase } from "firebase/database";
+import { ref, set } from 'firebase/database';
+
 
 const firebaseConfig = {
   apiKey: "AIzaSyDQgul1UxStJ3vQMGvLQ4XfE6hWyJJX2bA",
@@ -39,7 +41,21 @@ export const handleSignUp = async (email, password) => {
     // Access the newly created user
     const user = userCredential.user;
 
-    console.log('User signed up:', user.email);
+    const userProfile = {
+      uid: user.uid,
+      email: user.email,
+      displayName: user.displayName,
+      // Add additional data
+      customField: 'some test value',
+    }; 
+
+
+   // ref(db, 'users/'+ user.uid).set(userProfile); 
+
+   // console.log('User signed up:', user.email);
+
+    const userData = ref(db, 'users/'+ user.uid)  // Reference to the "Workouts" node
+    const snapshot = await set(userData, userProfile);
 
     return user;
   } catch (error) {
@@ -56,7 +72,16 @@ export const handleSignIn = async (email, password) => {
     // Access the signed-in user information
     const user = userCredential.user;
 
-    console.log('User signed in:', user.email);
+    const userProfile = {
+      uid: user.uid,
+      email: user.email,
+      displayName: user.displayName,
+      // Add additional data
+      customField: 'some test value',
+    };
+
+    const userData = ref(db, 'users/'+ user.uid)  // Reference to the "Workouts" node
+    const snapshot = await set(userData, userProfile);
 
     return user;
   } catch (error) {
