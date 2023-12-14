@@ -15,17 +15,22 @@
       "**/*"
     ],
     "ios": {
-            "supportsTablet": true
+      "supportsTablet": true
     },
     "android": {
-            "adaptiveIcon": {
+      "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"
-      }
+      },
+      "package": "com.reactnativeappdevelopment.AIMusic"
     },
     "web": {
       "favicon": "./assets/favicon.png"
+    },
+    "extra": {
+      "eas": {
+        "projectId": "968374a7-a88c-4ebf-8885-46a35bc76601"
+      }
     }
-
   }
 }

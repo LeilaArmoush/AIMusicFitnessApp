@@ -11,8 +11,8 @@ const SignUpScreen = () => {
 
   const handleSignUpPress = async () => {
     try {
-      await handleSignUp(email, password);
-      // You can navigate to another screen upon successful sign-up
+      const userProfile = await handleSignUp(email, password);
+      navigation.navigate('Welcome', { userProfile });
       
     } catch (error) {
       Alert.alert('Sign Up Failed', error.message);
