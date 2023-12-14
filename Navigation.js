@@ -8,6 +8,7 @@ import Timer from './Screens/Timer';
 import WorkoutSelection from "./Screens/WorkoutSelection";
 import { initializeFirebase, auth } from './firebaseconfig'; // Adjust the import path accordingly
 import SignupScreen from './Screens/SignUp'; // Import the new SignupScreen
+import WelcomeScreen from './Screens/Welcome';
 
 
 const Tab = createBottomTabNavigator();
@@ -40,7 +41,14 @@ export default function Navigation() {
 <NavigationContainer>
       <Stack.Navigator>
         {user ? (
+            <>
           <Stack.Screen name="App" component={TabGroup} />
+          <Stack.Screen
+          name="Welcome"
+          component={WelcomeScreen}
+          options={{ headerShown: false }}
+        />
+        </>
         ) : (
           <>
            <Stack.Screen
@@ -53,7 +61,7 @@ export default function Navigation() {
               component={SignInScreen}
               options={{ headerShown: false }}
             />
-           
+      
           </>
         )}
       </Stack.Navigator>

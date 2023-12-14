@@ -1,20 +1,26 @@
 import React, { useState } from 'react';
 import { View, TextInput, Button, StyleSheet, Alert } from 'react-native';
 import { handleSignIn } from '../firebaseconfig'; // Import your handleSignIn function
+import { useNavigation } from "@react-navigation/native";
+import { useRoute } from "@react-navigation/native";
 
 const SignInScreen = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const navigation = useNavigation();
+
+  const route = useRoute();
 
   const handleSignInPress = async () => {
     try {
-      await handleSignIn(email, password);
-      // You can navigate to another screen upon successful sign-in
+      const userProfile = await handleSignIn(email, password);
+     
+     navigation.navigate('Welcome', { userProfile });
         
     } catch (error) {
       Alert.alert('Sign In Failed', error.message);
     }
-  };
+  }; 
 
   return (
     <View style={styles.container}>

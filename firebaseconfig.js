@@ -1,6 +1,7 @@
 import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword } from '@firebase/auth';
 import { initializeApp } from '@firebase/app';
 import { getDatabase } from "firebase/database";
+import { ref, set } from 'firebase/database';
 
 
 const firebaseConfig = {
@@ -25,23 +26,41 @@ export const initializeFirebase = () => {
 };
 
 const app = initializeFirebase();
+
 const db = getDatabase(app);
 
-export { db }
+export { db, app}
 
 export const auth = getAuth();
+
+export const getUserData = async (credential) => {
+  try {
+  
+    const user = credential.user;
+
+    const userProfile = {
+      uid: user.uid,
+      email: user.email,
+      displayName: user.displayName,
+      // Add additional data
+      customField: 'some test value',
+    }; 
+
+    const userData = ref(db, 'users/'+ user.uid) 
+    const snapshot = await set(userData, userProfile);
+
+    return user;
+  } catch (error) {
+    console.error(error);
+    throw error;
+  }
+};
 
 export const handleSignUp = async (email, password) => {
   try {
     // Create a new user with the provided email and password
     const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-
-    // Access the newly created user
-    const user = userCredential.user;
-
-    console.log('User signed up:', user.email);
-
-    return user;
+    return getUserData(userCredential);
   } catch (error) {
     console.error(error);
     throw error;
@@ -51,14 +70,7 @@ export const handleSignUp = async (email, password) => {
 export const handleSignIn = async (email, password) => {
   try {
     // Sign in the user with the provided email and password
-    const userCredential = await signInWithEmailAndPassword(auth, email, password);
-
-    // Access the signed-in user information
-    const user = userCredential.user;
-
-    console.log('User signed in:', user.email);
-
-    return user;
+    await signInWithEmailAndPassword(auth, email, password);
   } catch (error) {
     console.error(error);
     throw error;
