@@ -4,7 +4,10 @@ import { TouchableOpacity } from "react-native-gesture-handler";
 import { useNavigation } from "@react-navigation/native";
 import { db } from '../firebaseconfig';
 import { ref, get } from 'firebase/database';
-import NumericInput from 'react-native-numeric-input';
+import { useFonts, Poppins_400Regular } from '@expo-google-fonts/poppins';
+import { LinearGradient } from 'expo-linear-gradient';
+import { commonStyles } from '../assets/common-styles';
+import { FontAwesome5, FontAwesome } from '@expo/vector-icons'; 
 
 
 const Welcome = ({route }) => {
@@ -21,6 +24,7 @@ const [seconds, setSeconds] = useState();
   const userProfile = route.params?.userProfile;
 
   const username = userProfile?.email.match(/^[^@]+/)[0];
+
   
   const handleMinutesChange = (value) => {
     setMinutes(value);
@@ -29,7 +33,6 @@ const [seconds, setSeconds] = useState();
   const handleSecondsChange = (value) => {
     setSeconds(value);
   };
-  
 
   const navigateToWorkoutList = () => {
     navigation.navigate("WorkoutSelection")
@@ -102,15 +105,61 @@ const handleRowChange = (id, key, value) => {
   setDataArray(newArray);
 };
 
+const [fontsLoaded] = useFonts({
+  Poppins_400Regular,
+});
+
+if (!fontsLoaded) {
+  // Font not yet loaded, you can return a loading indicator or wait
+  return null;
+}
+
   return (
     <View style={styles.container}>
       <View style = {styles.titleContainer}>
       <View style={[{opacity: (runProgramMenuOpen || runTimeSelectionOpen) ? 0 : 100}]}>
-      <Text style={styles.title}>{`Hi, ${username || 'User'}`}</Text>
-      <Text style={styles.title}>{'Would you like to:'}</Text>
-      <TouchableOpacity onPress={() => navigateToWorkoutList()}><Text style={styles.title}>{'Just Run'}</Text></TouchableOpacity>
-      <TouchableOpacity onPress={(handleRunProgramMenuPress)}><Text style={styles.title}>{'Start a Run program'}</Text></TouchableOpacity>
-      <TouchableOpacity><Text style={styles.title}>{'Build a custom workout'}</Text></TouchableOpacity>
+      <Text style={styles.title}>{`Hi ${username || 'User'}` + '! Would you like to:'}</Text>
+      <View style={commonStyles.card}>
+      <LinearGradient
+        colors={['rgba(157, 206, 255, 0.2)', 'rgba(146, 163, 253, 0.2)']}
+        style={commonStyles.cardGradient}
+        start={{ x: 0.2, y: 0.3 }}
+          end={{ x: 0.1, y: 0 }}>  
+      <TouchableOpacity onPress={() => navigateToWorkoutList()}>
+        <View style={commonStyles.cardContainer}><Text style={commonStyles.cardText}>{'Go for a Run                                          '}<FontAwesome5 name="running" size={24} color="black" />
+        </Text>
+        </View>
+      </TouchableOpacity>
+      </LinearGradient>
+      </View>
+      <View style={commonStyles.card}>
+      <LinearGradient
+        colors={['rgba(157, 206, 255, 0.2)', 'rgba(146, 163, 253, 0.2)']}
+        style={commonStyles.cardGradient}
+        start={{ x: 0.2, y: 0.3 }}
+          end={{ x: 0.1, y: 0 }}>    
+      <TouchableOpacity onPress={() => navigateToWorkoutList()}>
+        <View style={commonStyles.cardContainer}><Text style={commonStyles.cardText}>{'Start a run program                          '}</Text>
+        <Text style={commonStyles.cardText}></Text>
+        <FontAwesome name="calendar" size={24} color="black" />
+        </View>
+      </TouchableOpacity>
+      </LinearGradient>
+      </View>
+      <View style={commonStyles.card}>
+      <LinearGradient
+        colors={['rgba(157, 206, 255, 0.2)', 'rgba(146, 163, 253, 0.2)']}
+        style={commonStyles.cardGradient}
+        start={{ x: 0.2, y: 0.3 }}
+          end={{ x: 0.1, y: 0 }}>    
+      <TouchableOpacity onPress={() => navigateToWorkoutList()}>
+        <View style={commonStyles.cardContainer}>
+          <Text style={commonStyles.cardText}>{'Custom Workout\n(Coming soon)                                    '}</Text>
+          <FontAwesome name="edit" size={24} color="black" />
+        </View>
+      </TouchableOpacity>
+      </LinearGradient>
+      </View>
       </View>
       </View>
       <View style={[{opacity: runProgramMenuOpen ? 100 : 0}]}>
@@ -121,7 +170,10 @@ const handleRowChange = (id, key, value) => {
         <Text style={styles.title}>{item}</Text>
   </TouchableOpacity>
   }/>
-   {/*}   </View>
+    </View>
+  </View>   
+  );
+   {/*  </View>
       <View style={[{opacity: runTimeSelectionOpen ? 100 : 0}]}>
       <TouchableOpacity onPress={() => handleOnPress()}>
           <Text style={styles.title}>{'Start Workout'}</Text>
@@ -144,12 +196,24 @@ const handleRowChange = (id, key, value) => {
      
       <View>
     
-</View> */}
+</View> 
     </View>
-    
+      <View style={styles.fullbodyCard}>
+  <View style={styles.bg}>
+    <View style={styles.rectangle5718}></View>
+    <Text style={styles.workoutText}>Fullbody Workout</Text>
+    <Text style={styles.exercisesText}>11 Exercises | 32mins</Text>
+    <View style={styles.ellipse}></View>
+    <View style={styles.buttonViewmore}>
+      <View style={styles.buttonBg}></View>
+      <Text style={styles.buttonText}>View more</Text>
     </View>
+  </View>
+  <View style={styles.vector}></View>
+  {/* ... (continue with other vectors and styles) */}
+
     
-  );
+
 };
 
 const styles = StyleSheet.create({
@@ -158,14 +222,22 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center', // Center items horizontally
     padding: 16,
-    marginTop: 300,
+    marginTop: 300, 
   },
   titleContainer: {
-   // marginTop: 750,
+    marginBottom: 30,
   },
   title: {
-    fontSize: 18,
-    marginBottom: 10,
+    fontFamily: 'Poppins_400Regular',
+    fontStyle: 'normal',
+    fontWeight: '400',
+    fontSize: 20,
+    lineHeight: 30,
+    letterSpacing: 0.005,
+    color: '#1D1617',
+    marginTop: 100,
+    marginBottom: 30,
+    marginLeft: 30,
   },
   numericInputs: {
     flexDirection: 'row', // Arrange items in a row
@@ -173,23 +245,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center', // Center items horizontally
     //marginTop: 750, // Adjust this value as needed
    marginBottom: 900
-  },
-  input: {
-    flex: 1, // Allow the numeric inputs to take equal space
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center', // Center content horizontally
-    borderColor: 'gray',
-    borderWidth: 1, // Add border for better visibility
-    marginHorizontal: 10, // Adjust this value as needed
-    paddingHorizontal: 10, // Adjust this value as needed
-  },
-  buttons: {
-    flex: 1, // Arrange items in a row
-    alignItems: 'center', // Center items vertically
-    justifyContent: 'center', // Center items horizontally
- //   marginTop: 10, // Adjust this value as needed
-  // marginBottom: 500
   },
 });
 

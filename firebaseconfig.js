@@ -1,7 +1,8 @@
 import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword } from '@firebase/auth';
 import { initializeApp } from '@firebase/app';
-import { getDatabase } from "firebase/database";
-import { ref, set } from 'firebase/database';
+import { getDatabase, ref as dbref, set } from "firebase/database";
+import {  getStorage, ref as storageref, getDownloadURL} from '@firebase/storage';
+import { Audio } from 'expo-av';
 
 
 const firebaseConfig = {
@@ -29,9 +30,42 @@ const app = initializeFirebase();
 
 const db = getDatabase(app);
 
-export { db, app}
+const firebaseApp = initializeApp(firebaseConfig);
+const storage = getStorage(firebaseApp);
 
-export const auth = getAuth();
+export const playAudio = async (audioFileName) => {
+  try {
+    // Construct the path to the audio file in storage
+    const audioRef =  storageref(storage, audioFileName);
+    // Get the download URL for the audio file
+    const audioUrl = await getDownloadURL(audioRef);
+    
+    // Create a sound object and play the audio
+    const { sound } = await Audio.Sound.createAsync({ uri: audioUrl });
+    await sound.playAsync();
+  } catch (error) {
+    console.error('Error playing audio:', error);
+  }
+};
+
+export const stopAudio = async (audioFileName) => {
+  try {
+    // Construct the path to the audio file in storage
+    const audioRef =  storageref(storage, audioFileName);
+    // Get the download URL for the audio file
+    const audioUrl = await getDownloadURL(audioRef);
+    
+    // Create a sound object and play the audio
+    const { sound } = await Audio.Sound.createAsync({ uri: audioUrl });
+    await sound.unloadAsync();
+  } catch (error) {
+    console.error('Error playing audio:', error);
+  }
+};
+
+export { db, app }
+
+export const auth = getAuth(app);
 
 export const getUserData = async (credential) => {
   try {
@@ -46,7 +80,7 @@ export const getUserData = async (credential) => {
       customField: 'some test value',
     }; 
 
-    const userData = ref(db, 'users/'+ user.uid) 
+    const userData = dbref(db, 'users/'+ user.uid) 
     const snapshot = await set(userData, userProfile);
 
     return user;
@@ -74,5 +108,15 @@ export const handleSignIn = async (email, password) => {
   } catch (error) {
     console.error(error);
     throw error;
+  }
+};
+
+export const getSvgDownloadUrl = async (path) => {
+  try {
+    const reference = storage().ref(path); // Replace 'path' with the path to your SVG file
+    const url = await reference.getDownloadURL();
+    return url;
+  } catch (error) {
+    console.error('Error getting SVG download URL:', error);
   }
 };

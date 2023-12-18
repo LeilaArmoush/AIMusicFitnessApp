@@ -5,6 +5,9 @@ import { ref, get } from 'firebase/database';
 import { useNavigation } from '@react-navigation/native';
 import { useRoute } from "@react-navigation/native";
 import { auth } from "../firebaseconfig";
+import { LinearGradient } from 'expo-linear-gradient';
+import { commonStyles } from '../assets/common-styles';
+import { useFonts, Poppins_400Regular } from '@expo-google-fonts/poppins';
 
 const WorkoutList = ({  }) => {
 
@@ -101,19 +104,38 @@ const WorkoutList = ({  }) => {
     console.log('Selected Workout Data:', title);
   };
 
+  
+const [fontsLoaded] = useFonts({
+  Poppins_400Regular,
+});
+
+if (!fontsLoaded) {
+  // Font not yet loaded, you can return a loading indicator or wait
+  return null;
+}
+
   return (
     <View>
  <FlatList 
   data={workoutKeys}
   renderItem={({ item }) => {
     const isCompleted = completedWorkouts.includes(item);
-
     return (
-      <TouchableOpacity onPress={() => handleWorkoutPress(item)}>
-        <Text style={[styles.title, isCompleted ? styles.completed : null]}>
-          {item}
-        </Text>
-      </TouchableOpacity>
+          <View style={commonStyles.card}>
+          <LinearGradient       
+            colors={['rgba(157, 206, 255, 0.2)', 'rgba(146, 163, 253, 0.2)']}
+            style={commonStyles.cardGradient}
+            start={{ x: 0.2, y: 0.3 }}
+              end={{ x: 0.1, y: 0 }}>    
+          <TouchableOpacity onPress={() => handleWorkoutPress(item)}>
+            <View style={commonStyles.cardContainer}>
+              <Text style={[styles.cardText, isCompleted ? styles.completed : null]}>
+              {item}
+            </Text>
+            </View>
+          </TouchableOpacity>
+          </LinearGradient>
+          </View>
     );
   }}
 />
@@ -133,6 +155,14 @@ const styles = StyleSheet.create({
   },
   completed: {
     textDecorationLine: 'line-through',
+  },
+  cardText: {
+    alignSelf: 'center',
+    color: '#000000',
+    fontFamily: 'Poppins_400Regular',
+    fontWeight: '',
+    fontSize: 16,
+    lineHeight: 24,
   },
 });
 

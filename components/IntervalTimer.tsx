@@ -1,16 +1,18 @@
 import React, { useState, useEffect } from "react";
-import { View, Text, StyleSheet, Button } from "react-native";
+import { View, Text, StyleSheet, Button, TouchableOpacity, Modal } from "react-native";
 import CircleProgressBar from "react-native-progress-circle";
 import { useRoute } from "@react-navigation/native";
-import { db } from '../firebaseconfig'; // Import your Firestore database instance
+import { auth, db, playAudio, stopAudio } from '../firebaseconfig'; // Import your Firestore database instance
 import { ref, get, set } from 'firebase/database';
-import { activateKeepAwakeAsync, deactivateKeepAwake } from 'expo-keep-awake';
-import * as BackgroundFetch from 'expo-background-fetch';
 import { useNavigation } from "@react-navigation/native";
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Location from 'expo-location';
 import * as TaskManager from 'expo-task-manager';
-import { auth } from './../firebaseconfig'; // Import your Firebase authentication instance
+import { LinearGradient } from 'expo-linear-gradient';
+import { commonStyles } from '../assets/common-styles';
+import { AntDesign, Ionicons, FontAwesome, MaterialIcons, FontAwesome5 } from '@expo/vector-icons'; 
+import { useFonts, Poppins_700Bold } from '@expo-google-fonts/poppins';
+import * as Speech from 'expo-speech';
 
 const IntervalTimer = () => {
   const route = useRoute();
@@ -31,10 +33,19 @@ const IntervalTimer = () => {
   const [distance, setDistance] = useState(0);
   const [startTime, setStartTime] = useState(null);
   const [pace, setPace] = useState(0);
+  const [isModalVisible, setIsModalVisible] = useState(false);
+  const [sound, setSound] = React.useState();
+
+
 
   const navigation = useNavigation();
 
   const LOCATION_TRACKING = 'location-tracking';
+
+  const [fontsLoaded] = useFonts({
+    Poppins_700Bold
+  });
+  
 
   const startLocationTracking = async () => {
     setStartTime(new Date());
@@ -48,15 +59,6 @@ const IntervalTimer = () => {
     );
     setLocationStarted(hasStarted);
     console.log('tracking started?', hasStarted);
-  };
-
-  const handleRefresh = async () => {
-    try {
-      // Reload the app
-      await Updates.reloadAsync();
-    } catch (error) {
-      console.error('Error reloading app:', error);
-    }
   };
 
   useEffect(() => {
@@ -110,6 +112,8 @@ const IntervalTimer = () => {
     const pace = elapsedSeconds > 0 ? elapsedSeconds / distanceInKm / 60 : 0;
     return pace;
   };
+  
+
 
   TaskManager.defineTask(LOCATION_TRACKING, async ({ data, error }) => {
     if (error) {
@@ -183,6 +187,7 @@ const IntervalTimer = () => {
 
           if (nextIndex < data.length) {
             const nextItem = data[nextIndex];
+            isWorkoutComplete(false);
             setCurrentIndex(nextIndex);
             setCurrentInterval(nextItem.Rep ? "Run" : "Walk");
             setRemainingTime(nextItem.Seconds || 0);
@@ -207,11 +212,28 @@ const IntervalTimer = () => {
       return () => clearInterval(interval);
     }
   }, [isIntervalRunning, remainingTime, secondSegment, currentIndex, data]);
+  
+/* const pathToRunTrack = storageReference('run2.mp3')
+  async function playSound(pathToTrack) {
+    
+    console.log('Loading Sound');
+    const { sound } = await Audio.Sound.createAsync(
+      { uri: `file://${pathToTrack}` } // Use the file:// protocol for local files
+    );
+    setSound(sound);
+  
+    console.log('Playing Sound');
+    await sound.playAsync();
+  }  */
 
   const startTimer = async () => {
     setIsIntervalRunning(true);
     setTimerState("running");
     startLocationTracking();
+    await playAudio('run2.mp3');
+    Speech.speak('its time to begin your workout');
+ //   playSound(pathToRunTrack);
+    
   };
 
   const pauseTimer = async () => {
@@ -220,6 +242,7 @@ const IntervalTimer = () => {
     setIsIntervalRunning(false);
     setTimerState("idle");
     setLocationStarted(false);
+    await stopAudio('run2.mp3');
     TaskManager.isTaskRegisteredAsync(LOCATION_TRACKING).then((tracking) => {
       if (tracking) {
         Location.stopLocationUpdatesAsync(LOCATION_TRACKING);
@@ -244,15 +267,22 @@ const IntervalTimer = () => {
     });
   };
 
-  const clearWorkout = async () => {
-    // You can add logic to clear the workout data from your storage or database
-    // For example, if using AsyncStorage, you can use the following:
+  const handleSignOut= async () => {
     try {
-       AsyncStorage.clear(); // Change 'yourWorkoutDataKey' to your actual storage key
-      // You may also want to reset state variables here
+      // Sign the user out
+      await auth.signOut();
+
+      console.log('User signed out successfully.');
     } catch (error) {
-      console.error('Error clearing data stored:', error);
+      console.error('Error signing out:', error.message);
     }
+  };
+  
+
+  const clearWorkout = async () => {
+
+       await auth.signOut(); 
+       navigation.navigate("SignIn")
   };
   
   const formatTime = (seconds) => {
@@ -277,13 +307,15 @@ const IntervalTimer = () => {
     };
 
     const handleSaveWorkoutPress = async () => {
+      if(auth.currentUser.isAnonymous){
+        navigation.navigate("SignUp");
+      }
+      else
       try {
-        const uid = getCurrentUserUid();
+            const uid = getCurrentUserUid();
     
-        const userProfileRef = ref(db, 'users/' + uid);
-        const userProfileSnapshot = await get(userProfileRef);
-    
-        if (userProfileSnapshot.exists()) {
+          const userProfileRef = ref(db, 'users/' + uid);
+          const userProfileSnapshot = await get(userProfileRef);
           const userProfileData = userProfileSnapshot.val();
     
           // Assuming workoutTitle is a string, replace it with the actual workout title value    
@@ -306,35 +338,62 @@ const IntervalTimer = () => {
           await set(userProfileRef, userProfileData);
     
           console.log('Workout added to user profile successfully.');
-        } else {
-          console.log('User profile not found.');
-        }
-      } catch (error) {
+          handleSignOut();
+          navigation.navigate("SignIn");
+      }
+       catch (error) {
         console.error('Error saving workout to user profile:', error);
       }
     };
+    
+
+    if (!fontsLoaded) {
+      // Font not yet loaded, you can return a loading indicator or wait
+      return null;
+    }
+
 
   const renderButtons = () => {
     switch (timerState) {
       case "idle":
         return (
           <>
-          <Button title="Start" onPress={startTimer} />
-        <Button title="Clear Workout" onPress={clearWorkout} />
+           <TouchableOpacity style={commonStyles.smallButton} onPress={startTimer}>
+            <LinearGradient
+             colors={['#9DCEFF', '#92A3FD']}
+             style={commonStyles.buttonGradient}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 0 }}>  
+            <Text style={commonStyles.buttonText}>{"Start"}</Text>  
+            <AntDesign name="play" size={24} color="white" />
+          </LinearGradient>
+          </TouchableOpacity>
+          <TouchableOpacity style={commonStyles.smallButton} onPress={clearWorkout}>
+            <LinearGradient
+             colors={['#9DCEFF', '#92A3FD']}
+             style={commonStyles.buttonGradient}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 0 }}>    
+            <Text style={commonStyles.buttonText}>{"End Workout"}</Text>
+            <Ionicons name="refresh-circle" size={24} color="white" />
+          </LinearGradient>
+          </TouchableOpacity>
         </>
         );
-      case "running":
+      case "running": 
         return (
           <>
-            <Button title="Pause" onPress={pauseTimer} />
- 
-          </>
-        );
-      case "paused":
-        return (
-          <>
-            <Button title="Resume" onPress={resumeTimer} />
-            <Button title="Clear Workout" onPress={clearWorkout} />
+       <TouchableOpacity style={commonStyles.smallButton} onPress={pauseTimer}>
+            <LinearGradient
+             colors={['#C58BF2', '#EEA4CE']}
+             style={commonStyles.buttonGradient}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 0 }}>    
+            <Text style={commonStyles.buttonText}>{"Pause"}</Text>
+            <FontAwesome name="pause" size={24} color="white" />
+          </LinearGradient>
+          </TouchableOpacity>
+
           </>
         );
       default:
@@ -344,49 +403,71 @@ const IntervalTimer = () => {
 
   return (
     <View style={styles.container}>
-      <Button title="Refresh" onPress={handleRefresh} />
-      <Text>{ workoutTitle }</Text>
-      <Text>{currentInterval + ':'} { currentIndex + 1} {'/' + intervalCount }</Text>
+      <Text style={styles.title}>{ workoutTitle }</Text>
+      <Text style={styles.title}>{currentInterval + ':'} { currentIndex + 1} {'/' + intervalCount }</Text>
       <CircleProgressBar
         percent={percent}
         radius={70}
         borderWidth={20}
-        color={currentInterval === "Run" ? "#64FAC3" : "#1A73E9"}
+        color={currentInterval === "Run" ? "#BCC2E4" : "#EEA4CE"}
+        shadowColor="#F7F8F8"
       />
-      <Text style={styles.text}>
-        {currentInterval}: {formatTime(remainingTime)} remaining
+      <Text style={styles.title}>
+        {formatTime(remainingTime)} remaining
       </Text>
-      {/* Display pace and distance */}
       <View style={[styles.buttons, {opacity: workoutComplete ? 0 : 100}]}>
         {renderButtons()}
-      </View>
-      <View style={[{opacity: workoutComplete ? 100 : 0}]}>
-        <Text>{"CONGRATULATIONS YOU HAVE COMPLETED THE WORKOUT"}</Text>
-        <Button title="Clear Workout" onPress={clearWorkout} />
-        <Button title="Save Workout" onPress={handleSaveWorkoutPress} />
       </View>
       <View>
       {locationStarted ? (
         <>
           {currentLocation && (
             <View style={styles.locationInfo}>
-              <Text>Latitude: {currentLocation.latitude}</Text>
-              <Text>Longitude: {currentLocation.longitude}</Text>
-              <Text>Distance: {distance.toFixed(2)} km</Text>
-              {/* You can format pace as needed */}
-              <Text>Pace: {distance > 0 ? pace.toFixed(2) : 0} min/km</Text>
+              <View style={styles.whiteCard}>
+              <Text style={styles.whiteCardText}>{'Distance\n'+ distance.toFixed(2) +'km'}</Text>
+              <FontAwesome5 name="ruler-horizontal" size={40} color="black" />
+              </View>
+              <View style={styles.whiteCard}>
+              <Text style={styles.whiteCardText}>{'Average Pace\n'} {distance > 0 ? pace.toFixed(2) : 0} {'min/km'}</Text>
+              <MaterialIcons name="speed" size={40} color="black" />
+              </View>
             </View>
           )}
         </>
       ) : (
         <View style={styles.locationInfo}>
-          <Text style={styles.locationInfo}>Start Tracking</Text>
+          <Text style={styles.whiteCard}>{'Start Tracking'}</Text>
         </View>
       )}
+      {workoutComplete ? (
+      <Modal style={[{opacity: workoutComplete ? 100 : 0}]}>  
+      <Text style={styles.titleComplete}>{"CONGRATULATIONS YOU HAVE COMPLETED THE WORKOUT!!!"}</Text>
+      <TouchableOpacity  style={styles.button} onPress={handleSaveWorkoutPress} >     
+      <LinearGradient
+        colors={['#C58BF2', '#EEA4CE']}
+        style={commonStyles.buttonGradient}
+        start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 0 }}>        
+      <Text style={commonStyles.buttonText}>{"Save Workout and Sign Out"}</Text>
+      </LinearGradient>
+      </TouchableOpacity>
+      <View style={styles.locationInfo}>
+              <View style={styles.whiteCard}>
+              <Text style={styles.whiteCardText}>{'Distance\n'+ distance.toFixed(2) +'km'}</Text>
+              <FontAwesome5 name="ruler-horizontal" size={40} color="black" />
+              </View>
+              <View style={styles.whiteCard}>
+              <Text style={styles.whiteCardText}>{'Average Pace\n'} {distance > 0 ? pace.toFixed(2) : 0} {'min/km'}</Text>
+              <MaterialIcons name="speed" size={40} color="black" />
+              </View>
+            </View>
+      </Modal> ) : (<></>)}
     </View>
     </View>
   );
 };
+
+
 
 const styles = StyleSheet.create({
   container: {
@@ -396,16 +477,85 @@ const styles = StyleSheet.create({
   },
   text: {
     fontSize: 24,
-
-    marginTop: 20,
+    marginTop: 0,
   },
   buttons: {
     flexDirection: "row",
     marginTop: 20,
   },
   locationInfo: {
-    marginTop: 20,
+    flexDirection: 'row',
+    marginTop: -30,
+    marginLeft: 20, 
+    alignSelf: 'center'
   },
+  title: {
+    fontFamily: 'Poppins_400Regular',
+    fontStyle: 'normal',
+    fontWeight: '400',
+    fontSize: 20,
+    lineHeight: 30,
+    letterSpacing: 0.005,
+    color: '#1D1617',
+  },
+  titleComplete: {
+    fontFamily: 'Poppins_700Bold',
+    fontStyle: 'normal',
+    fontWeight: '400',
+    fontSize: 20,
+    lineHeight: 30,
+    letterSpacing: 0.005,
+    color: '#1D1617',
+    textAlign:'center',
+    alignContent: 'center',
+    marginTop: 200,
+    marginBottom: 50,
+  },
+    whiteCard: { 
+      textAlignVertical: 'center',
+      textAlign: 'center',
+      alignItems: 'center',
+      fontFamily: 'Poppins_400Regular',
+      backgroundColor: '#FFFFFF',
+      justifyContent: 'center',
+      marginBottom: 0,
+      marginRight: 20,
+      width: 150,
+      height: 140,
+      padding: 18,
+      borderRadius: 20,
+            elevation: 4,
+      shadowOffset: {
+        width: 0,
+        height: 10,
+      },
+      shadowOpacity: 22,
+    },
+    whiteCardText: {
+      fontFamily: 'Poppins_400Regular',
+      fontSize: 20,
+      textAlignVertical: 'center',
+      textAlign: 'center',
+      alignItems: 'center',
+    },
+    button: { 
+      marginTop: -65, 
+      marginBottom: 80, 
+      textAlign: 'center',
+      width: 345,
+      height: 60,
+      padding: 18,
+      borderRadius: 99,
+      flexDirection: 'row',
+      alignSelf: 'center',
+      shadowColor: 'rgba(149, 173, 254, 0.3)',
+      shadowOffset: {
+        width: 0,
+        height: 10,
+      },
+      shadowOpacity: 22,
+    },
+   
 });
 
 export default IntervalTimer;
