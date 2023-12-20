@@ -34,7 +34,9 @@ const IntervalTimer = () => {
   const [startTime, setStartTime] = useState(null);
   const [pace, setPace] = useState(0);
   const [isModalVisible, setIsModalVisible] = useState(false);
-  const [sound, setSound] = React.useState();
+  const [musicFilename, setMusicFilename] = useState("");
+  const [audioOn, isAudioOn] = useState(false);
+  const [narration, setNarrationText] = useState("");
 
 
 
@@ -147,7 +149,6 @@ const IntervalTimer = () => {
 
     const fetchData = async () => {
       AsyncStorage.clear()
-
       try {
         const dataRef = ref(db, 'Workouts/' + workoutTitle +'/');
         const snapshot = await get(dataRef);
@@ -162,6 +163,7 @@ const IntervalTimer = () => {
           setPercent(100);
           setIntervalLength(dataArray[0].Seconds || 0);
           setSecondSegment(100 / (dataArray[0].Seconds || 1)); // Prevent division by zero
+          setNarrationText(dataArray[0].Text);
         } else {
           console.log('No data found.');
         }
@@ -176,42 +178,68 @@ const IntervalTimer = () => {
   }, [workoutTitle]);
 
   useEffect(() => {
-
     if (isIntervalRunning) {
-      const interval = setInterval(() => {
+      const interval = setInterval(async () => {
         setRemainingTime((prevRemainingTime) => prevRemainingTime - 1);
         setPercent((prevProgress) => prevProgress - secondSegment);
-
+  
+        if (remainingTime === (intervalLength / 2) && intervalLength > 40) {
+          Speech.speak("Halfway through this section! Keep it up!");
+        }
+  
+        if (remainingTime === 10 && intervalLength > 40) {
+          Speech.speak("10 seconds remaining!");
+        }
+  
         if (remainingTime === 0) {
           const nextIndex = currentIndex + 1;
-
+  
           if (nextIndex < data.length) {
             const nextItem = data[nextIndex];
+  
+            if (audioOn) {
+              await stopAudio();
+              await Speech.stop();
+              isAudioOn(false);
+            }
+  
+            await playAudio(nextItem.Rep ? 'run2.mp3' : 'walk.mp3');
+            isAudioOn(true);
             isWorkoutComplete(false);
             setCurrentIndex(nextIndex);
-            setCurrentInterval(nextItem.Rep ? "Run" : "Walk");
+            setNarrationText(nextItem.Text);
+            await Speech.speak(nextItem.Text); // Use updated narration text directly
+            setCurrentInterval(nextItem.Rep ? 'Run' : 'Walk');
             setRemainingTime(nextItem.Seconds || 0);
             setPercent(100);
             setIntervalLength(nextItem.Seconds || 0);
-            setSecondSegment(100 / (nextItem.Seconds || 1)); // Prevent division by zero
+            setSecondSegment(100 / (nextItem.Seconds || 1));
           } else {
-            setIsIntervalRunning(false); // Stop the timer if no more items
-            isWorkoutComplete(true)
-            setIntervalCount(data.length)
+            if (audioOn) {
+              await stopAudio();
+              await Speech.stop();
+              isAudioOn(false);
+            }
+  
+            setIsIntervalRunning(false);
+            isWorkoutComplete(true);
+            setIntervalCount(data.length);
             setData([]);
             setRemainingTime(0);
             setPercent(100);
             setIntervalLength(0);
             setSecondSegment(1); // Prevent division by zero
-            setTimerState("idle");
-
+            setTimerState('idle');
           }
         }
       }, 1000);
-
-      return () => clearInterval(interval);
+  
+      return () => {
+        clearInterval(interval);
+      };
     }
-  }, [isIntervalRunning, remainingTime, secondSegment, currentIndex, data]);
+  }, [isIntervalRunning, remainingTime, secondSegment, currentIndex, data, audioOn, musicFilename, intervalLength, narration]);
+  
   
 /* const pathToRunTrack = storageReference('run2.mp3')
   async function playSound(pathToTrack) {
@@ -230,9 +258,16 @@ const IntervalTimer = () => {
     setIsIntervalRunning(true);
     setTimerState("running");
     startLocationTracking();
-    await playAudio('run2.mp3');
-    Speech.speak('its time to begin your workout');
- //   playSound(pathToRunTrack);
+    
+    const audioFilename =
+    currentInterval === "Run" ? "run2.mp3" : "walk.mp3";
+    if(!audioOn)
+    {
+    await playAudio(audioFilename);
+    isAudioOn(true);
+    }
+    
+    Speech.speak(narration);
     
   };
 
@@ -242,7 +277,12 @@ const IntervalTimer = () => {
     setIsIntervalRunning(false);
     setTimerState("idle");
     setLocationStarted(false);
-    await stopAudio('run2.mp3');
+    if(audioOn)
+    {
+    await stopAudio();
+    await Speech.stop();
+    isAudioOn(false)
+    }
     TaskManager.isTaskRegisteredAsync(LOCATION_TRACKING).then((tracking) => {
       if (tracking) {
         Location.stopLocationUpdatesAsync(LOCATION_TRACKING);
@@ -280,7 +320,12 @@ const IntervalTimer = () => {
   
 
   const clearWorkout = async () => {
-
+    if(audioOn)
+    {
+      await stopAudio();
+      await Speech.stop();
+      isAudioOn(false);
+    }
        await auth.signOut(); 
        navigation.navigate("SignIn")
   };
@@ -307,13 +352,18 @@ const IntervalTimer = () => {
     };
 
     const handleSaveWorkoutPress = async () => {
+      if(audioOn)
+      {
+        await stopAudio();
+        await Speech.stop();
+        isAudioOn(false);
+      }
       if(auth.currentUser.isAnonymous){
         navigation.navigate("SignUp");
       }
       else
       try {
-            const uid = getCurrentUserUid();
-    
+          const uid = getCurrentUserUid();
           const userProfileRef = ref(db, 'users/' + uid);
           const userProfileSnapshot = await get(userProfileRef);
           const userProfileData = userProfileSnapshot.val();
@@ -338,6 +388,12 @@ const IntervalTimer = () => {
           await set(userProfileRef, userProfileData);
     
           console.log('Workout added to user profile successfully.');
+          if(audioOn)
+          {
+            await stopAudio();
+            await Speech.stop();
+            isAudioOn(false);
+          }
           handleSignOut();
           navigation.navigate("SignIn");
       }

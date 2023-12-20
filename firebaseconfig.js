@@ -1,7 +1,7 @@
 import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword } from '@firebase/auth';
 import { initializeApp } from '@firebase/app';
 import { getDatabase, ref as dbref, set } from "firebase/database";
-import {  getStorage, ref as storageref, getDownloadURL} from '@firebase/storage';
+import {  getStorage, ref as storageRef, getDownloadURL} from '@firebase/storage';
 import { Audio } from 'expo-av';
 
 
@@ -33,35 +33,51 @@ const db = getDatabase(app);
 const firebaseApp = initializeApp(firebaseConfig);
 const storage = getStorage(firebaseApp);
 
+let soundObject;
+
 export const playAudio = async (audioFileName) => {
   try {
-    // Construct the path to the audio file in storage
-    const audioRef =  storageref(storage, audioFileName);
-    // Get the download URL for the audio file
+
+    const audioRef = storageRef(storage, 'audio/' + audioFileName);
     const audioUrl = await getDownloadURL(audioRef);
     
-    // Create a sound object and play the audio
-    const { sound } = await Audio.Sound.createAsync({ uri: audioUrl });
-    await sound.playAsync();
+    // Create a sound object
+    soundObject = new Audio.Sound();
+    
+    // Load and play the audio
+    await soundObject.loadAsync({ uri: audioUrl });
+    await soundObject.playAsync();
   } catch (error) {
     console.error('Error playing audio:', error);
   }
 };
 
-export const stopAudio = async (audioFileName) => {
+export const stopAudio = async () => {
   try {
-    // Construct the path to the audio file in storage
-    const audioRef =  storageref(storage, audioFileName);
-    // Get the download URL for the audio file
-    const audioUrl = await getDownloadURL(audioRef);
-    
-    // Create a sound object and play the audio
-    const { sound } = await Audio.Sound.createAsync({ uri: audioUrl });
-    await sound.unloadAsync();
+    // Check if soundObject is defined before unloading
+    if (soundObject) {
+      await soundObject.stopAsync();
+     await soundObject.unloadAsync();
+     // soundObject.setOnPlaybackStatusUpdate(null); // Reset playback status update
+    }
   } catch (error) {
-    console.error('Error playing audio:', error);
+    console.error('Error stopping audio:', error);
   }
 };
+
+export const getImageFile = async (imageFileName) => {
+  try{
+
+    const imageRef =  storageref(storage, imageFileName);
+    // Get the download URL for the audio file
+    const imageUrl = await getDownloadURL(imageRef);
+    return imageUrl;
+  }
+  catch (error)
+  {
+    console.error('Error Loading Image', error);
+  }
+}
 
 export { db, app }
 
