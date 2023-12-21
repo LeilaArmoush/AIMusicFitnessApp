@@ -200,6 +200,7 @@ const IntervalTimer = () => {
         
           if (nextIndex < data.length) {
             const nextItem = data[nextIndex];
+            const plusTwoItem = data[nextIndex + 1];
         
             if (audioOn) {
               await stopAudio();
@@ -208,9 +209,9 @@ const IntervalTimer = () => {
               }
               isAudioOn(false);
             }
-            const bpmFilename = await getRandomFileNameByBPM(bpm);
+
+            const bpmFilename = await getRandomFileNameByBPM(nextItem.Bpm);
             await playAudio(bpmFilename);
-            setBpm(nextItem.Bpm);
             setCurrentIndex(nextIndex);
             setNarrationText(nextItem.Text);
             setCurrentInterval(nextItem.Rep ? 'Run' : 'Walk');

@@ -4,7 +4,7 @@ import { handleSignUp } from '../firebaseconfig'; // Import your handleSignUp fu
 import { useNavigation } from '@react-navigation/native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useFonts, Poppins_700Bold, Poppins_400Regular } from '@expo-google-fonts/poppins';
-import { MaterialCommunityIcons, AntDesign, Feather  } from '@expo/vector-icons'; 
+import {  AntDesign, Feather  } from '@expo/vector-icons'; 
 import AppLoading from 'expo-app-loading';
 import { signInAnonymously } from "firebase/auth";
 import {auth} from '../firebaseconfig';
