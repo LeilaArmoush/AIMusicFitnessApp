@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { View, Text, StyleSheet, Button, TouchableOpacity, Modal } from "react-native";
 import CircleProgressBar from "react-native-progress-circle";
 import { useRoute } from "@react-navigation/native";
-import { auth, db, playAudio, stopAudio } from '../firebaseconfig'; // Import your Firestore database instance
+import { auth, db, getRandomFileNameByBPM, playAudio, stopAudio } from '../firebaseconfig'; // Import your Firestore database instance
 import { ref, get, set } from 'firebase/database';
 import { useNavigation } from "@react-navigation/native";
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -13,6 +13,7 @@ import { commonStyles } from '../assets/common-styles';
 import { AntDesign, Ionicons, FontAwesome, MaterialIcons, FontAwesome5 } from '@expo/vector-icons'; 
 import { useFonts, Poppins_700Bold } from '@expo-google-fonts/poppins';
 import * as Speech from 'expo-speech';
+import { Svg, SvgUri } from 'react-native-svg';
 
 const IntervalTimer = () => {
   const route = useRoute();
@@ -36,7 +37,9 @@ const IntervalTimer = () => {
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [musicFilename, setMusicFilename] = useState("");
   const [audioOn, isAudioOn] = useState(false);
-  const [narration, setNarrationText] = useState("");
+  const [narration, setNarrationText] = useState("Lets Go!");
+  const [bpm, setBpm] = useState("");
+  const [svgURL, setSvgURL] = useState("");
 
 
 
@@ -164,6 +167,7 @@ const IntervalTimer = () => {
           setIntervalLength(dataArray[0].Seconds || 0);
           setSecondSegment(100 / (dataArray[0].Seconds || 1)); // Prevent division by zero
           setNarrationText(dataArray[0].Text);
+          setBpm(dataArray[0].Bpm);
         } else {
           console.log('No data found.');
         }
@@ -193,34 +197,43 @@ const IntervalTimer = () => {
   
         if (remainingTime === 0) {
           const nextIndex = currentIndex + 1;
-  
+        
           if (nextIndex < data.length) {
             const nextItem = data[nextIndex];
-  
+        
             if (audioOn) {
               await stopAudio();
-              await Speech.stop();
+              if (narration !== null) {
+                await Speech.stop();
+              }
               isAudioOn(false);
             }
-  
-            await playAudio(nextItem.Rep ? 'run2.mp3' : 'walk.mp3');
-            isAudioOn(true);
-            isWorkoutComplete(false);
+            const bpmFilename = await getRandomFileNameByBPM(bpm);
+            await playAudio(bpmFilename);
+            setBpm(nextItem.Bpm);
             setCurrentIndex(nextIndex);
             setNarrationText(nextItem.Text);
-            await Speech.speak(nextItem.Text); // Use updated narration text directly
             setCurrentInterval(nextItem.Rep ? 'Run' : 'Walk');
             setRemainingTime(nextItem.Seconds || 0);
             setPercent(100);
             setIntervalLength(nextItem.Seconds || 0);
             setSecondSegment(100 / (nextItem.Seconds || 1));
+           
+            isAudioOn(true);
+            isWorkoutComplete(false);
+            
+            // Use updated narration text directly
+            
+            await Speech.speak(nextItem.Text);
           } else {
             if (audioOn) {
               await stopAudio();
-              await Speech.stop();
+              if (narration !== null) {
+                await Speech.stop();
+              }
               isAudioOn(false);
             }
-  
+        
             setIsIntervalRunning(false);
             isWorkoutComplete(true);
             setIntervalCount(data.length);
@@ -238,7 +251,7 @@ const IntervalTimer = () => {
         clearInterval(interval);
       };
     }
-  }, [isIntervalRunning, remainingTime, secondSegment, currentIndex, data, audioOn, musicFilename, intervalLength, narration]);
+  }, [isIntervalRunning, remainingTime, secondSegment, currentIndex, data, audioOn, musicFilename, intervalLength, narration, bpm]);
   
   
 /* const pathToRunTrack = storageReference('run2.mp3')
@@ -258,17 +271,18 @@ const IntervalTimer = () => {
     setIsIntervalRunning(true);
     setTimerState("running");
     startLocationTracking();
-    
-    const audioFilename =
-    currentInterval === "Run" ? "run2.mp3" : "walk.mp3";
+
     if(!audioOn)
     {
-    await playAudio(audioFilename);
+    const audioFilename = await getRandomFileNameByBPM(bpm);
+
+   await playAudio(audioFilename);
     isAudioOn(true);
     }
-    
-    Speech.speak(narration);
-    
+    if(narration!==null)
+    {
+      Speech.speak(narration);
+    }
   };
 
   const pauseTimer = async () => {
@@ -280,7 +294,9 @@ const IntervalTimer = () => {
     if(audioOn)
     {
     await stopAudio();
+    if(narration!==null) {
     await Speech.stop();
+    }
     isAudioOn(false)
     }
     TaskManager.isTaskRegisteredAsync(LOCATION_TRACKING).then((tracking) => {
@@ -323,7 +339,9 @@ const IntervalTimer = () => {
     if(audioOn)
     {
       await stopAudio();
+      if(narration!==null) {
       await Speech.stop();
+      }
       isAudioOn(false);
     }
        await auth.signOut(); 
@@ -355,7 +373,9 @@ const IntervalTimer = () => {
       if(audioOn)
       {
         await stopAudio();
+        if(narration!==null) {
         await Speech.stop();
+        }
         isAudioOn(false);
       }
       if(auth.currentUser.isAnonymous){
@@ -391,7 +411,9 @@ const IntervalTimer = () => {
           if(audioOn)
           {
             await stopAudio();
+            if(narration!==null) {
             await Speech.stop();
+            }
             isAudioOn(false);
           }
           handleSignOut();
@@ -457,8 +479,32 @@ const IntervalTimer = () => {
     }
   };
 
+ /* useEffect(() => {
+    const displaySVGURI = async () => {
+      try {
+        const imageFile =  getImageFile('runner.svg');
+        setSvgURL(imageFile);
+      } catch (error) {
+        console.error('Error fetching SVG:', error);
+      }
+    };
+
+    displaySVGURI();
+
+    // Cleanup function (if needed)
+    return () => {
+      // Perform any cleanup logic here
+    };
+  }, []); */
+
+
   return (
     <View style={styles.container}>
+  {/*    <SvgUri
+    width="100%"
+    height="100%"
+    uri= {svgURL}
+  /> */}
       <Text style={styles.title}>{ workoutTitle }</Text>
       <Text style={styles.title}>{currentInterval + ':'} { currentIndex + 1} {'/' + intervalCount }</Text>
       <CircleProgressBar

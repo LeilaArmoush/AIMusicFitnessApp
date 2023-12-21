@@ -1,7 +1,7 @@
 import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword } from '@firebase/auth';
 import { initializeApp } from '@firebase/app';
 import { getDatabase, ref as dbref, set } from "firebase/database";
-import {  getStorage, ref as storageRef, getDownloadURL} from '@firebase/storage';
+import {  getStorage, ref as storageRef, getDownloadURL, listAll} from '@firebase/storage';
 import { Audio } from 'expo-av';
 
 
@@ -37,18 +37,35 @@ let soundObject;
 
 export const playAudio = async (audioFileName) => {
   try {
-
+    // Assuming audioFileName is an object and has a property like 'name'
     const audioRef = storageRef(storage, 'audio/' + audioFileName);
     const audioUrl = await getDownloadURL(audioRef);
-    
+
     // Create a sound object
     soundObject = new Audio.Sound();
-    
+
     // Load and play the audio
     await soundObject.loadAsync({ uri: audioUrl });
     await soundObject.playAsync();
   } catch (error) {
     console.error('Error playing audio:', error);
+  }
+};
+
+export const _onPlaybackStatusUpdate = async (playbackStatus) => {
+  if (soundObject) { 
+  const { durationMillis } = await soundObject.getDurationAsync();
+  const durationInSeconds = durationMillis / 1000;
+
+  console.log(`Duration of ${audioFileName}: ${durationInSeconds} seconds`);
+  if (playbackStatus.didJustFinish) {
+    // Handle the loop logic here
+  
+      this.setState({ numberOfLoops: 200});
+      playbackObject.replayAsync(); // Replay the audio
+    } else {
+      playbackObject.setIsLooping(false); // Disable looping
+    }
   }
 };
 
@@ -65,19 +82,27 @@ export const stopAudio = async () => {
   }
 };
 
-export const getImageFile = async (imageFileName) => {
-  try{
+export const getRandomFileNameByBPM = async (targetBPM) => {
+  const audioRef = storageRef(storage, 'audio/');
+  const files = await listAll(audioRef);
 
-    const imageRef =  storageref(storage, imageFileName);
-    // Get the download URL for the audio file
-    const imageUrl = await getDownloadURL(imageRef);
-    return imageUrl;
+  const filteredFiles = files.items.filter((file) => {
+    const fileName = file.name;
+    const regex = new RegExp(`^${targetBPM}bpm_\\d+\\.mp3$`);
+    return regex.test(fileName);
+  });
+
+  if (filteredFiles.length === 0) {
+    // No matching files found
+    return null;
   }
-  catch (error)
-  {
-    console.error('Error Loading Image', error);
-  }
-}
+
+  // Select a random index from the filtered array
+  const randomIndex = Math.floor(Math.random() * filteredFiles.length);
+
+  // Return the name of the randomly selected file
+  return filteredFiles[randomIndex].name;
+};
 
 export { db, app }
 

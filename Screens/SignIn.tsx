@@ -33,6 +33,7 @@ const SignInScreen = () => {
   if (!fontsLoaded) {
     // Font not yet loaded, you can return a loading indicator or wait
     return null;
+    
   }
 
   return (
