@@ -1,7 +1,8 @@
 import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword } from '@firebase/auth';
 import { initializeApp } from '@firebase/app';
-import { getDatabase } from "firebase/database";
-import { ref, set } from 'firebase/database';
+import { getDatabase, ref as dbref, set } from "firebase/database";
+import {  getStorage, ref as storageRef, getDownloadURL, listAll} from '@firebase/storage';
+import { Audio } from 'expo-av';
 
 
 const firebaseConfig = {
@@ -29,9 +30,99 @@ const app = initializeFirebase();
 
 const db = getDatabase(app);
 
-export { db, app}
+const firebaseApp = initializeApp(firebaseConfig);
+const storage = getStorage(firebaseApp);
 
-export const auth = getAuth();
+let soundObject;
+
+export const playAudio = async (audioFileName) => {
+  try {
+    // Assuming audioFileName is an object and has a property like 'name'
+    const audioRef = storageRef(storage, 'audio/' + audioFileName);
+    const audioUrl = await getDownloadURL(audioRef);
+
+    // Create a sound object
+    soundObject = new Audio.Sound();
+
+    // Load and play the audio
+    await soundObject.loadAsync({ uri: audioUrl });
+    await soundObject.playAsync();
+    await soundObject.setIsLoopingAsync(true);
+  } catch (error) {
+    console.error('Error playing audio:', error);
+  }
+};
+
+export const _onPlaybackStatusUpdate = async (playbackStatus) => {
+  if (soundObject) { 
+  const { durationMillis } = await soundObject.getDurationAsync();
+  const durationInSeconds = durationMillis / 1000;
+
+  console.log(`Duration of ${audioFileName}: ${durationInSeconds} seconds`);
+  if (playbackStatus.didJustFinish) {
+    // Handle the loop logic here
+  
+      this.setState({ numberOfLoops: 200});
+      playbackObject.replayAsync(); // Replay the audio
+    } else {
+      playbackObject.setIsLooping(false); // Disable looping
+    }
+  }
+};
+
+export const stopAudio = async () => {
+  try {
+    // Check if soundObject is defined before unloading
+    if (soundObject) {
+      await soundObject.stopAsync();
+      await soundObject.setIsLoopingAsync(false);
+     await soundObject.unloadAsync();
+     // soundObject.setOnPlaybackStatusUpdate(null); // Reset playback status update
+    }
+  } catch (error) {
+    console.error('Error stopping audio:', error);
+  }
+};
+
+export const pauseAudio = async () => {
+  try {
+    // Check if soundObject is defined before unloading
+    if (soundObject) {
+      await soundObject.pauseAsync();
+      await soundObject.setIsLoopingAsync(false);
+     await soundObject.unloadAsync();
+     // soundObject.setOnPlaybackStatusUpdate(null); // Reset playback status update
+    }
+  } catch (error) {
+    console.error('Error stopping audio:', error);
+  }
+};
+
+export const getRandomFileNameByBPM = async (targetBPM) => {
+  const audioRef = storageRef(storage, 'audio/');
+  const files = await listAll(audioRef);
+
+  const filteredFiles = files.items.filter((file) => {
+    const fileName = file.name;
+    const regex = new RegExp(`^${targetBPM}bpm_\\d+\\.mp3$`);
+    return regex.test(fileName);
+  });
+
+  if (filteredFiles.length === 0) {
+    // No matching files found
+    return null;
+  }
+
+  // Select a random index from the filtered array
+  const randomIndex = Math.floor(Math.random() * filteredFiles.length);
+
+  // Return the name of the randomly selected file
+  return filteredFiles[randomIndex].name;
+};
+
+export { db, app }
+
+export const auth = getAuth(app);
 
 export const getUserData = async (credential) => {
   try {
@@ -46,7 +137,7 @@ export const getUserData = async (credential) => {
       customField: 'some test value',
     }; 
 
-    const userData = ref(db, 'users/'+ user.uid) 
+    const userData = dbref(db, 'users/'+ user.uid) 
     const snapshot = await set(userData, userProfile);
 
     return user;
@@ -74,5 +165,15 @@ export const handleSignIn = async (email, password) => {
   } catch (error) {
     console.error(error);
     throw error;
+  }
+};
+
+export const getSvgDownloadUrl = async (path) => {
+  try {
+    const reference = storage().ref(path); // Replace 'path' with the path to your SVG file
+    const url = await reference.getDownloadURL();
+    return url;
+  } catch (error) {
+    console.error('Error getting SVG download URL:', error);
   }
 };

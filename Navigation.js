@@ -9,20 +9,21 @@ import WorkoutSelection from "./Screens/WorkoutSelection";
 import { initializeFirebase, auth } from './firebaseconfig'; // Adjust the import path accordingly
 import SignupScreen from './Screens/SignUp'; // Import the new SignupScreen
 import WelcomeScreen from './Screens/Welcome';
+import { commonStyles, header } from './assets/common-styles';
 
 
 const Tab = createBottomTabNavigator();
 const Stack = createStackNavigator();
 
-function TabGroup() {
+{/* function TabGroup() {
   return (
     <Tab.Navigator>
-      <Tab.Screen name="Planner" component={Planner} />
-      <Tab.Screen name="Timer" component={Timer} />
-      <Tab.Screen name='WorkoutSelection' component={WorkoutSelection} />
+    {  <Tab.Screen name="Planner" component={Planner} options={{ headerShown: false }} />
+     <Tab.Screen name="Timer" component={Timer} options={{ headerShown: false }}/> *} 
+     <Tab.Screen name='WorkoutSelection' component={WorkoutSelection} options={{ headerShown: false }} /> 
     </Tab.Navigator>
   );
-}
+}*/}
 
 export default function Navigation() {
   const [user, setUser] = useState(null);
@@ -39,31 +40,40 @@ export default function Navigation() {
 
   return (
 <NavigationContainer>
-      <Stack.Navigator>
-        {user ? (
-            <>
-          <Stack.Screen name="App" component={TabGroup} />
-          <Stack.Screen
-          name="Welcome"
-          component={WelcomeScreen}
-          options={{ headerShown: false }}
-        />
-        </>
-        ) : (
+      <Stack.Navigator
+      screenOptions={{
+        headerStyle: {
+          backgroundColor: '#92A3FD'
+          ,
+        },
+        headerTintColor: '#fff',
+        headerTitleStyle: {
+          fontWeight: 'bold',
+          color: 'white',
+        },
+      }}>
           <>
            <Stack.Screen
-              name="Signup"
+              name="SignUp"
               component={SignupScreen}
-              options={{ title: 'Signup' }}
+              options={{ headerShown: false}}
             />
             <Stack.Screen
               name="SignIn"
               component={SignInScreen}
-              options={{ headerShown: false }}
+               options={{ title: 'Login'}}
             />
-      
+              <Stack.Screen
+          name="Welcome"
+          component={WelcomeScreen}
+        />
+        <Stack.Screen 
+        name="WorkoutSelection" 
+        component={WorkoutSelection} />
+        <Stack.Screen
+         name="Timer"
+          component={Timer} />
           </>
-        )}
       </Stack.Navigator>
     </NavigationContainer>
   );
