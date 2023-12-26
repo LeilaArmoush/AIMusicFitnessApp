@@ -47,6 +47,7 @@ export const playAudio = async (audioFileName) => {
     // Load and play the audio
     await soundObject.loadAsync({ uri: audioUrl });
     await soundObject.playAsync();
+    await soundObject.setIsLoopingAsync(true);
   } catch (error) {
     console.error('Error playing audio:', error);
   }
@@ -74,6 +75,21 @@ export const stopAudio = async () => {
     // Check if soundObject is defined before unloading
     if (soundObject) {
       await soundObject.stopAsync();
+      await soundObject.setIsLoopingAsync(false);
+     await soundObject.unloadAsync();
+     // soundObject.setOnPlaybackStatusUpdate(null); // Reset playback status update
+    }
+  } catch (error) {
+    console.error('Error stopping audio:', error);
+  }
+};
+
+export const pauseAudio = async () => {
+  try {
+    // Check if soundObject is defined before unloading
+    if (soundObject) {
+      await soundObject.pauseAsync();
+      await soundObject.setIsLoopingAsync(false);
      await soundObject.unloadAsync();
      // soundObject.setOnPlaybackStatusUpdate(null); // Reset playback status update
     }

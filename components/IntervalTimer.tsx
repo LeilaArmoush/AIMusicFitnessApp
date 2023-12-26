@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { View, Text, StyleSheet, Button, TouchableOpacity, Modal } from "react-native";
 import CircleProgressBar from "react-native-progress-circle";
 import { useRoute } from "@react-navigation/native";
-import { auth, db, getRandomFileNameByBPM, playAudio, stopAudio } from '../firebaseconfig'; // Import your Firestore database instance
+import { auth, db, getRandomFileNameByBPM, playAudio, stopAudio, pauseAudio } from '../firebaseconfig';
 import { ref, get, set } from 'firebase/database';
 import { useNavigation } from "@react-navigation/native";
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -40,8 +40,6 @@ const IntervalTimer = () => {
   const [narration, setNarrationText] = useState("Lets Go!");
   const [bpm, setBpm] = useState("");
   const [svgURL, setSvgURL] = useState("");
-
-
 
   const navigation = useNavigation();
 
@@ -168,6 +166,7 @@ const IntervalTimer = () => {
           setSecondSegment(100 / (dataArray[0].Seconds || 1)); // Prevent division by zero
           setNarrationText(dataArray[0].Text);
           setBpm(dataArray[0].Bpm);
+          setCurrentInterval(dataArray[0].Rep ? 'Run' : 'Walk')
         } else {
           console.log('No data found.');
         }
@@ -211,7 +210,8 @@ const IntervalTimer = () => {
             }
 
             const bpmFilename = await getRandomFileNameByBPM(nextItem.Bpm);
-            await playAudio(bpmFilename);
+            await playAudio(bpmFilename)
+         
             setCurrentIndex(nextIndex);
             setNarrationText(nextItem.Text);
             setCurrentInterval(nextItem.Rep ? 'Run' : 'Walk');
@@ -269,6 +269,7 @@ const IntervalTimer = () => {
   }  */
 
   const startTimer = async () => {
+    console.log('bpm:' + bpm)
     setIsIntervalRunning(true);
     setTimerState("running");
     startLocationTracking();
@@ -277,7 +278,7 @@ const IntervalTimer = () => {
     {
     const audioFilename = await getRandomFileNameByBPM(bpm);
 
-   await playAudio(audioFilename);
+    await playAudio(audioFilename)
     isAudioOn(true);
     }
     if(narration!==null)
@@ -294,7 +295,7 @@ const IntervalTimer = () => {
     setLocationStarted(false);
     if(audioOn)
     {
-    await stopAudio();
+    await pauseAudio();
     if(narration!==null) {
     await Speech.stop();
     }

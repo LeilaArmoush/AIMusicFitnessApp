@@ -4,7 +4,7 @@ import { handleSignUp } from '../firebaseconfig'; // Import your handleSignUp fu
 import { useNavigation } from '@react-navigation/native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useFonts, Poppins_700Bold, Poppins_400Regular } from '@expo-google-fonts/poppins';
-import {  AntDesign, Feather  } from '@expo/vector-icons'; 
+import { AntDesign, Feather, Ionicons } from '@expo/vector-icons'; 
 import AppLoading from 'expo-app-loading';
 import { signInAnonymously } from "firebase/auth";
 import {auth} from '../firebaseconfig';
@@ -63,9 +63,9 @@ const SignUpScreen = () => {
     return <AppLoading />;
   } else {
   return (
-    <View style={styles.container}>
+    <View style={styles.container}>      
       <TextInput
-        style={commonStyles.input}
+        style = {commonStyles.input}
         placeholder="Email"
         onChangeText={setEmail}
         value={email}
@@ -118,6 +118,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginTop: 20,
     marginBottom: 20,
+  },
+  textInput: {
+    fontFamily: 'Poppins_400Regular',
+    flexDirection: 'row',
+    alignItems: 'center',
   },
 
   text: {
