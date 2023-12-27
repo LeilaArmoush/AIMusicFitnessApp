@@ -13,7 +13,10 @@ import { commonStyles } from '../assets/common-styles';
 import { AntDesign, Ionicons, FontAwesome, MaterialIcons, FontAwesome5 } from '@expo/vector-icons'; 
 import { useFonts, Poppins_700Bold } from '@expo-google-fonts/poppins';
 import * as Speech from 'expo-speech';
-import { Svg, SvgUri } from 'react-native-svg';
+import { SvgXml } from 'react-native-svg';
+import { badge } from "../assets/badge";
+
+
 
 const IntervalTimer = () => {
   const route = useRoute();
@@ -21,6 +24,7 @@ const IntervalTimer = () => {
   const [isIntervalRunning, setIsIntervalRunning] = useState(false);
   const [currentInterval, setCurrentInterval] = useState("Run");
   const [remainingTime, setRemainingTime] = useState(0);
+  const [totalRemainingTime, setTotalRemainingTime] = useState(0);
   const [percent, setPercent] = useState(100);
   const [intervalLength, setIntervalLength] = useState(0);
   const [secondSegment, setSecondSegment] = useState(0);
@@ -337,19 +341,7 @@ const IntervalTimer = () => {
   };
   
 
-  const clearWorkout = async () => {
-    if(audioOn)
-    {
-      await stopAudio();
-      if(narration!==null) {
-      await Speech.stop();
-      }
-      isAudioOn(false);
-    }
-       await auth.signOut(); 
-       navigation.navigate("SignIn")
-  };
-  
+ 
   const formatTime = (seconds) => {
     const minutes = Math.floor(seconds / 60);
     const remainingSeconds = seconds % 60;
@@ -394,6 +386,7 @@ const IntervalTimer = () => {
           // Create a new workout object
           const newWorkout = {
             title: workoutTitle,
+            distance: distance,
             timestamp: new Date().toISOString(), // Include a timestamp or any other relevant information
           };
     
@@ -425,6 +418,58 @@ const IntervalTimer = () => {
         console.error('Error saving workout to user profile:', error);
       }
     };
+
+    const endWorkout = async () => {
+      if(audioOn)
+      {
+        await stopAudio();
+        if(narration!==null) {
+        await Speech.stop();
+        }
+        isAudioOn(false);
+      }
+      if(auth.currentUser === null)
+      {navigation.navigate("WorkoutSelection");
+    }
+      if(auth.currentUser.isAnonymous){
+        navigation.navigate("WorkoutSelection");
+      }
+      else
+      try {
+          const uid = getCurrentUserUid();
+          const userProfileRef = ref(db, 'users/' + uid);
+          const userProfileSnapshot = await get(userProfileRef);
+          const userProfileData = userProfileSnapshot.val();
+    
+          // Assuming workoutTitle is a string, replace it with the actual workout title value    
+          // Create a new workout object
+          const newWorkout = {
+            title: workoutTitle + '-incomplete',
+            timestamp: new Date().toISOString(), // Include a timestamp or any other relevant information
+          };
+    
+          // Check if the workouts array exists in the user's profile
+          if (!userProfileData.workouts) {
+            // If it doesn't exist, create a new array and add the first workout
+            userProfileData.workouts = [newWorkout];
+          } else {
+            // If it exists, push the new workout to the array
+            userProfileData.workouts.push(newWorkout);
+          }
+    
+          // Update the user's profile with the modified data
+          await set(userProfileRef, userProfileData);
+    
+          console.log('Workout added to user profile successfully.');
+        }
+          catch (error) {
+            console.error('Error saving workout to user profile:', error);
+          }
+         await auth.signOut(); 
+         navigation.navigate("WorkoutSelection")
+      
+    };
+    
     
 
     if (!fontsLoaded) {
@@ -448,7 +493,7 @@ const IntervalTimer = () => {
             <AntDesign name="play" size={24} color="white" />
           </LinearGradient>
           </TouchableOpacity>
-          <TouchableOpacity style={commonStyles.smallButton} onPress={clearWorkout}>
+          <TouchableOpacity style={commonStyles.smallButton} onPress={endWorkout}>
             <LinearGradient
              colors={['#9DCEFF', '#92A3FD']}
              style={commonStyles.buttonGradient}
@@ -502,12 +547,8 @@ const IntervalTimer = () => {
 
   return (
     <View style={styles.container}>
-  {/*    <SvgUri
-    width="100%"
-    height="100%"
-    uri= {svgURL}
-  /> */}
       <Text style={styles.title}>{ workoutTitle }</Text>
+      <Text style={styles.title}>{'Target steps per minute: ' + bpm + 'bpm'}</Text>
       <Text style={styles.title}>{currentInterval + ':'} { currentIndex + 1} {'/' + intervalCount }</Text>
       <CircleProgressBar
         percent={percent}
@@ -545,7 +586,10 @@ const IntervalTimer = () => {
       )}
       {workoutComplete ? (
       <Modal style={[{opacity: workoutComplete ? 100 : 0}]}>  
-      <Text style={styles.titleComplete}>{"CONGRATULATIONS YOU HAVE COMPLETED THE WORKOUT!!!"}</Text>
+      <View style={styles.badge}>
+       <SvgXml width={200} height={200} xml={ badge } /> 
+       </View>
+      <Text style={styles.titleComplete}>{"CONGRATULATIONS YOU HAVE COMPLETED " + workoutTitle + "!" }</Text>
       <TouchableOpacity  style={styles.button} onPress={handleSaveWorkoutPress} >     
       <LinearGradient
         colors={['#C58BF2', '#EEA4CE']}
@@ -612,7 +656,7 @@ const styles = StyleSheet.create({
     color: '#1D1617',
     textAlign:'center',
     alignContent: 'center',
-    marginTop: 200,
+    marginTop: 30,
     marginBottom: 50,
   },
     whiteCard: { 
@@ -659,6 +703,11 @@ const styles = StyleSheet.create({
       },
       shadowOpacity: 22,
     },
+    badge: {
+      marginTop: 90,
+      alignItems: 'center',
+
+    }
    
 });
 

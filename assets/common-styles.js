@@ -21,7 +21,7 @@ export const commonStyles = StyleSheet.create({
       //-----------------------button----------------------------------------------------
       button: { 
         textAlign: 'center',
-        marginBottom: 60,
+        marginBottom: 30,
         width: 345,
         height: 60,
         padding: 18,
@@ -116,6 +116,43 @@ export const commonStyles = StyleSheet.create({
       headerTitleStyle: {
         fontWeight: 'bold',
       },
+      whiteCard: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        marginBottom: 10,
+        width: 345,
+        height: 70,
+        padding: 18,
+        borderRadius: 20,
+        alignItems: 'center',
+        shadowColor: '#1D1617',
+        shadowOffset: {
+          width: 0,
+          height: 20,
+        },
+        shadowOpacity: 0.07,
+        shadowRadius: 40,
+        borderRadius: 16,
+        elevation: 2,
+        backgroundColor: '#FFFFFF',
+      },
+      checkboxText: {
+        fontFamily: 'Poppins_400Regular',
+        fontSize: 12,
+        marginLeft: 8,
+        marginTop: 5
+       // flexDirection: 'row',
+       // alignItems: 'center',
+      },
+      checkboxContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginBottom: 20,
+        marginLeft: -30
+      },
+      checkbox:{
+        justifyContent: 'flex-start',
+      }
 });
 
 export const header = StyleSheet.create({

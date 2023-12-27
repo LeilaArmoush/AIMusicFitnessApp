@@ -168,10 +168,10 @@ export const handleSignIn = async (email, password) => {
   }
 };
 
-export const getSvgDownloadUrl = async (path) => {
+export const getSvgDownloadUrl = async (fileName) => {
   try {
-    const reference = storage().ref(path); // Replace 'path' with the path to your SVG file
-    const url = await reference.getDownloadURL();
+    const fileRef = storageRef(storage, 'svg/' + fileName);
+    const url = await getDownloadURL(fileRef);
     return url;
   } catch (error) {
     console.error('Error getting SVG download URL:', error);
