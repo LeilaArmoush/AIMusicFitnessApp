@@ -43,6 +43,11 @@ export const playAudio = async (audioFileName) => {
 
     // Create a sound object
     soundObject = new Audio.Sound();
+    await Audio.setAudioModeAsync(
+      {
+        staysActiveInBackground: true,
+      }
+    );
 
     // Load and play the audio
     await soundObject.loadAsync({ uri: audioUrl });

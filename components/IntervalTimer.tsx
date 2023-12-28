@@ -3,7 +3,7 @@ import { View, Text, StyleSheet, Button, TouchableOpacity, Modal } from "react-n
 import CircleProgressBar from "react-native-progress-circle";
 import { useRoute } from "@react-navigation/native";
 import { auth, db, getRandomFileNameByBPM, playAudio, stopAudio, pauseAudio } from '../firebaseconfig';
-import { ref, get, set } from 'firebase/database';
+import { ref, get, set, Database } from 'firebase/database';
 import { useNavigation } from "@react-navigation/native";
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Location from 'expo-location';
@@ -15,7 +15,7 @@ import { useFonts, Poppins_700Bold } from '@expo-google-fonts/poppins';
 import * as Speech from 'expo-speech';
 import { SvgXml } from 'react-native-svg';
 import { badge } from "../assets/badge";
-
+import * as BackgroundFetch from 'expo-background-fetch';
 
 
 const IntervalTimer = () => {
@@ -38,12 +38,13 @@ const IntervalTimer = () => {
   const [distance, setDistance] = useState(0);
   const [startTime, setStartTime] = useState(null);
   const [pace, setPace] = useState(0);
-  const [isModalVisible, setIsModalVisible] = useState(false);
   const [musicFilename, setMusicFilename] = useState("");
   const [audioOn, isAudioOn] = useState(false);
   const [narration, setNarrationText] = useState("Lets Go!");
   const [bpm, setBpm] = useState("");
-  const [svgURL, setSvgURL] = useState("");
+  const [startDateTime, setStartDateTime] = useState(null);
+  const [currentDateTime, setCurrentDateTime] = useState(null);
+  const [totalSecondsInWorkout, setTotalSecondsInWorkout] = useState(0);
 
   const navigation = useNavigation();
 
@@ -52,8 +53,17 @@ const IntervalTimer = () => {
   const [fontsLoaded] = useFonts({
     Poppins_700Bold
   });
-  
+  const BACKGROUND_FETCH_TASK = 'background-fetch';
 
+  TaskManager.defineTask(BACKGROUND_FETCH_TASK, async () => {
+    const now = Date.now();
+  
+    console.log(`Got background fetch call at date: ${new Date(now).toISOString()}`);
+  
+    // Be sure to return the successful result type!
+    return BackgroundFetch.BackgroundFetchResult.NewData;
+  });
+  
   const startLocationTracking = async () => {
     setStartTime(new Date());
     await Location.startLocationUpdatesAsync(LOCATION_TRACKING, {
@@ -170,7 +180,15 @@ const IntervalTimer = () => {
           setSecondSegment(100 / (dataArray[0].Seconds || 1)); // Prevent division by zero
           setNarrationText(dataArray[0].Text);
           setBpm(dataArray[0].Bpm);
-          setCurrentInterval(dataArray[0].Rep ? 'Run' : 'Walk')
+          setCurrentInterval(dataArray[0].Rep ? 'Run' : 'Walk');
+
+          let totalNumberOfSeconds = 0;
+          dataArray.forEach((item) => {
+          totalNumberOfSeconds += item.Seconds;
+          });
+
+          setTotalSecondsInWorkout(totalNumberOfSeconds);
+
         } else {
           console.log('No data found.');
         }
@@ -187,8 +205,10 @@ const IntervalTimer = () => {
   useEffect(() => {
     if (isIntervalRunning) {
       const interval = setInterval(async () => {
+ 
         setRemainingTime((prevRemainingTime) => prevRemainingTime - 1);
-        setPercent((prevProgress) => prevProgress - secondSegment);
+        console.log('remaining time: ' + remainingTime)
+        setPercent((prevProgress) => prevProgress - (100/remainingTime));
   
         if (remainingTime === (intervalLength / 2) && intervalLength > 40) {
           Speech.speak("Halfway through this section! Keep it up!");
@@ -222,8 +242,8 @@ const IntervalTimer = () => {
             setRemainingTime(nextItem.Seconds || 0);
             setPercent(100);
             setIntervalLength(nextItem.Seconds || 0);
+            setCurrentDateTime(Date.now());
             setSecondSegment(100 / (nextItem.Seconds || 1));
-           
             isAudioOn(true);
             isWorkoutComplete(false);
             
@@ -273,6 +293,7 @@ const IntervalTimer = () => {
   }  */
 
   const startTimer = async () => {
+    setStartDateTime(Date.now());
     console.log('bpm:' + bpm)
     setIsIntervalRunning(true);
     setTimerState("running");
