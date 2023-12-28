@@ -7,11 +7,16 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useFonts, Poppins_700Bold } from '@expo-google-fonts/poppins';
 import { MaterialCommunityIcons  } from '@expo/vector-icons'; 
 import { commonStyles } from '../assets/common-styles'
+import { SvgXml } from 'react-native-svg';
+import { runBeatsTitleAndLogo } from '../assets/RunBeatsLogoAndTitle';
+import Checkbox from 'expo-checkbox';
 
 const SignInScreen = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const navigation = useNavigation();
+  const [isChecked, setChecked] = useState(false);
+
   const [fontsLoaded] = useFonts({
     Poppins_700Bold,
   });
@@ -37,6 +42,10 @@ const SignInScreen = () => {
 
   return (
     <View style={styles.container}>
+           <View>
+    <SvgXml width={150} height={100} xml={ runBeatsTitleAndLogo } />
+    <Text style={styles.logoText}>{'Run Flow'}</Text>
+         </View>
       <TextInput
         style={commonStyles.input}
         placeholder="Email"
@@ -50,6 +59,15 @@ const SignInScreen = () => {
         onChangeText={setPassword}
         value={password}
       />
+        <View  style={commonStyles.checkboxContainer}>
+       <Checkbox
+       style={commonStyles.checkbox}
+          value={isChecked}
+          onValueChange={setChecked}
+          color={isChecked ? '#92A3FD' : undefined}
+        />
+        <Text style={commonStyles.checkboxText}> {'I accept the terms and conditions, and \n privacy policy'}</Text>
+        </View>
       <TouchableOpacity  style={commonStyles.button} onPress={handleSignInPress} >
     <LinearGradient
   colors={['#92A3FD', '#9DCEFF']}
@@ -102,6 +120,15 @@ const styles = StyleSheet.create({
     fontSize: 16,
     lineHeight: 24,
   },
+  logoText: {
+    fontFamily: 'Poppins_700Bold',
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginLeft: 10,
+    fontSize: 25,
+    color: '#C58BF2',
+    marginBottom: 20,
+  }
 });
 
 export default SignInScreen;

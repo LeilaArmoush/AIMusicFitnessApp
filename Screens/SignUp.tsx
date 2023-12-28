@@ -7,14 +7,18 @@ import { useFonts, Poppins_700Bold, Poppins_400Regular } from '@expo-google-font
 import { AntDesign, Feather, Ionicons } from '@expo/vector-icons'; 
 import AppLoading from 'expo-app-loading';
 import { signInAnonymously } from "firebase/auth";
-import {auth} from '../firebaseconfig';
+import {auth, getSvgDownloadUrl} from '../firebaseconfig';
 import { commonStyles } from '../assets/common-styles'
+import { SvgUri, SvgXml } from 'react-native-svg';
+import { runBeatsTitleAndLogo } from '../assets/RunBeatsLogoAndTitle';
+import Checkbox from 'expo-checkbox';
 
 const SignUpScreen = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const navigatior = useNavigation(); // Ensure you import useNavigation
-
+  const [isChecked, setChecked] = useState(false);
+  const navigatior = useNavigation();
+ 
   const [fontsLoaded] = useFonts({
     Poppins_700Bold, Poppins_400Regular
   });
@@ -63,7 +67,11 @@ const SignUpScreen = () => {
     return <AppLoading />;
   } else {
   return (
-    <View style={styles.container}>      
+    <View style={styles.container}>  
+    <View style={styles.logoContainer}>
+    <SvgXml width={150} height={100} xml={ runBeatsTitleAndLogo } />
+    <Text style={styles.logoText}>{'Run Flow'}</Text>
+    </View>
       <TextInput
         style = {commonStyles.input}
         placeholder="Email"
@@ -77,6 +85,15 @@ const SignUpScreen = () => {
         onChangeText={setPassword}
         value={password}
       />
+      <View  style={commonStyles.checkboxContainer}>
+       <Checkbox
+       style={commonStyles.checkbox}
+          value={isChecked}
+          onValueChange={setChecked}
+          color={isChecked ? '#92A3FD' : undefined}
+        />
+        <Text style={commonStyles.checkboxText}> {'I accept the terms and conditions, and \n privacy policy'}</Text>
+        </View>
       <TouchableOpacity style={commonStyles.button} onPress={handleSignUpPress}>
       <LinearGradient
         colors={['#9DCEFF', '#92A3FD']}
@@ -86,8 +103,8 @@ const SignUpScreen = () => {
       <Text style={commonStyles.buttonText}><AntDesign name="adduser" size={24} color="white" />{"  Sign Up"}</Text>
       </LinearGradient>
       </TouchableOpacity>
-      <View>
-        <Text style={styles.orText}>Or</Text>
+      <View style={styles.orContainer}>
+        <Text style={styles.orText}>{'Or'}</Text>
     </View>
     <View style={styles.textContainer}>
       <Text style = {styles.text} >{'Already have an account?'}</Text>
@@ -109,9 +126,16 @@ const SignUpScreen = () => {
 
 const styles = StyleSheet.create({
   container: {
-    marginTop: 200,
+    flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  logoContainer: {
+   // flex: 1,
+    //alignItems: 'center',
+  //  width: '50%',
+  //  aspectRatio: 1, // Ensure the container maintains a square aspect ratio
+    marginTop: 130, // Adjust as needed
   },
   textContainer: {
     flexDirection: 'row',
@@ -124,19 +148,51 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
   },
-
+  checkboxText: {
+    fontFamily: 'Poppins_400Regular',
+    fontSize: 12,
+    marginLeft: 8,
+    marginTop: 5
+   // flexDirection: 'row',
+   // alignItems: 'center',
+  },
+  checkboxContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 20,
+    marginLeft: -30
+  },
   text: {
+    fontFamily: 'Poppins_400Regular',
     marginRight: 5, // Adjust the spacing between the texts
     marginTop: 60,
   },
-
   loginText: {
+    fontFamily: 'Poppins_400Regular',
     color: '#C58BF2',
     marginTop: 60,
   },
   orContainer: {
-    flex: 1,
+    flexDirection: 'row',
+    marginBottom: 30,
   },
+  orText: {
+    fontFamily: 'Poppins_400Regular',
+    fontSize: 12,
+    color: 'black'
+  },
+  logoText: {
+    fontFamily: 'Poppins_700Bold',
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginLeft: 10,
+    fontSize: 25,
+    color: '#C58BF2',
+    marginBottom: 20,
+  },
+  checkbox:{
+    justifyContent: 'flex-start',
+  }
 });
 
 export default SignUpScreen;

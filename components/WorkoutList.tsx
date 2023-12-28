@@ -8,6 +8,8 @@ import { auth } from "../firebaseconfig";
 import { LinearGradient } from 'expo-linear-gradient';
 import { commonStyles } from '../assets/common-styles';
 import { useFonts, Poppins_400Regular } from '@expo-google-fonts/poppins';
+import { Ionicons, SimpleLineIcons } from '@expo/vector-icons'; 
+
 
 const WorkoutList = ({  }) => {
 
@@ -16,8 +18,7 @@ const WorkoutList = ({  }) => {
 
   const [workoutTitle, setWorkoutTitle] = useState(route.params?.workoutTitle);
   const [completedWorkouts, setCompletedWorkouts] = useState([]);
-
-
+ 
   const fetchKeysFromDb =  async (path) => {
     try {
       const reference = ref(db, path); // Reference to the "Workouts" node
@@ -115,27 +116,30 @@ if (!fontsLoaded) {
 }
 
   return (
-    <View>
+    <View style = {styles.container}>
  <FlatList 
   data={workoutKeys}
   renderItem={({ item }) => {
     const isCompleted = completedWorkouts.includes(item);
+    const isNotCompleted = completedWorkouts.includes(item + '-incomplete');
     return (
-          <View style={commonStyles.card}>
-          <LinearGradient       
-            colors={['rgba(157, 206, 255, 0.2)', 'rgba(146, 163, 253, 0.2)']}
-            style={commonStyles.cardGradient}
-            start={{ x: 0.2, y: 0.3 }}
-              end={{ x: 0.1, y: 0 }}>    
           <TouchableOpacity onPress={() => handleWorkoutPress(item)}>
-            <View style={commonStyles.cardContainer}>
-              <Text style={[styles.cardText, isCompleted ? styles.completed : null]}>
-              {item}
+             <View style={commonStyles.whiteCard}> 
+             <View >
+            <SimpleLineIcons name="badge" size={24} color="#d4ad22" style = {[{opacity: isCompleted ? 100 : 0}]} />
+            </View>
+              <Text style={styles.cardText}>
+              {item}            
             </Text>
+            <Ionicons name="refresh-circle-outline" size={24} color="black" style = {[{opacity: isNotCompleted ? 100 : 0}]}/>
+            <Text style={[styles.tryAgainCardText, {opacity: isNotCompleted ? 100 : 0}]}>
+           
+              {'  Try Again! '}           
+            </Text>
+                <Ionicons name="ios-arrow-forward-circle-outline" size={24} color="grey" style={styles.cardIcon} />
             </View>
           </TouchableOpacity>
-          </LinearGradient>
-          </View>
+        
     );
   }}
 />
@@ -145,24 +149,30 @@ if (!fontsLoaded) {
 
 const styles = StyleSheet.create({
   container: {
-    flex: 1,
-    justifyContent: 'center',
-    padding: 16,
+    marginTop: 20,
   },
   title: {
     fontSize: 18,
     marginBottom: 10,
   },
-  completed: {
-    textDecorationLine: 'line-through',
-  },
   cardText: {
-    alignSelf: 'center',
+    flex: 1,
     color: '#000000',
     fontFamily: 'Poppins_400Regular',
-    fontWeight: '',
-    fontSize: 16,
-    lineHeight: 24,
+    fontSize: 12,
+    marginRight: 10,
+    marginLeft: 10,
+   // lineHeight: 24,
+  },
+  tryAgainCardText: {
+    marginLeft: 10,
+   // marginBottom: -10,
+    color: '#000000',
+    fontFamily: 'Poppins_400Regular',
+  },
+  cardIcon: {
+    alignSelf: 'flex-end',
+    marginBottom: 4
   },
 });
 
