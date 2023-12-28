@@ -155,9 +155,6 @@ const styles = StyleSheet.create({
     fontSize: 18,
     marginBottom: 10,
   },
-  completed: {
-    textDecorationLine: 'line-through',
-  },
   cardText: {
     flex: 1,
     color: '#000000',
@@ -169,12 +166,13 @@ const styles = StyleSheet.create({
   },
   tryAgainCardText: {
     marginLeft: 10,
-    marginBottom: -10,
+   // marginBottom: -10,
     color: '#000000',
     fontFamily: 'Poppins_400Regular',
   },
   cardIcon: {
     alignSelf: 'flex-end',
+    marginBottom: 4
   },
 });
 

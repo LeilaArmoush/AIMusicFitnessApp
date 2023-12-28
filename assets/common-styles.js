@@ -117,6 +117,7 @@ export const commonStyles = StyleSheet.create({
         fontWeight: 'bold',
       },
       whiteCard: {
+        alignSelf: 'center',
         flexDirection: 'row',
         justifyContent: 'space-between',
         marginBottom: 10,

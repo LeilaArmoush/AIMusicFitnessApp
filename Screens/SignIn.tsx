@@ -44,7 +44,7 @@ const SignInScreen = () => {
     <View style={styles.container}>
            <View>
     <SvgXml width={150} height={100} xml={ runBeatsTitleAndLogo } />
-    <Text style={styles.logoText}>{'Run Beats.'}</Text>
+    <Text style={styles.logoText}>{'Run Flow'}</Text>
          </View>
       <TextInput
         style={commonStyles.input}
