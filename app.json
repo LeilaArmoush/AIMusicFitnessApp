@@ -1,6 +1,7 @@
 {
   "expo": {
     "name": "run-flow",
+    "sdkVersion": "49.0.0",
     "slug": "run-flow",
     "version": "1.0.0",
     "orientation": "portrait",
@@ -53,7 +54,8 @@
           "isAndroidBackgroundLocationEnabled": true,
           "isIosBackgroundLocationEnabled": true
         }
-      ]
+      ],
+      "expo-build-properties"
     ]
   }
 }

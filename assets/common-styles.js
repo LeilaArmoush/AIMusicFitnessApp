@@ -16,12 +16,22 @@ export const commonStyles = StyleSheet.create({
         borderWidth: 1,
         borderColor: '#F7F8F8',
         backgroundColor: '#F7F8F8',
-        fontFamily: 'Poppins_700Bold', // Apply the Poppins font to the input
+        fontFamily: 'Poppins_700Bold',
+        shadowColor: '#1D1617',
+        shadowOffset: {
+          width: 0,
+          height: 20,
+        },
+        shadowOpacity: 0.07,
+        shadowRadius: 40,
+        borderRadius: 16,
+        elevation: 2,
+        backgroundColor: '#FFFFFF',
       },
       //-----------------------button----------------------------------------------------
       button: { 
         textAlign: 'center',
-        marginBottom: 30,
+      //  marginBottom: 30,
         width: 345,
         height: 60,
         padding: 18,
@@ -141,7 +151,8 @@ export const commonStyles = StyleSheet.create({
         fontFamily: 'Poppins_400Regular',
         fontSize: 12,
         marginLeft: 8,
-        marginTop: 5
+        marginTop: 5,
+        color: 'blue'
        // flexDirection: 'row',
        // alignItems: 'center',
       },

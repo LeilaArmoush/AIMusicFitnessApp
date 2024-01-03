@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from "react";
-import { View, Text, StyleSheet, Button, TouchableOpacity, Modal } from "react-native";
+import { View, Text, StyleSheet, Button, TouchableOpacity, Modal, Animated } from "react-native";
 import CircleProgressBar from "react-native-progress-circle";
 import { useRoute } from "@react-navigation/native";
-import { auth, db, getRandomFileNameByBPM, playAudio, stopAudio, pauseAudio } from '../firebaseconfig';
-import { ref, get, set, Database } from 'firebase/database';
+import { auth, db, getRandomFileNameByBPM, playAudio, stopAudio, pauseAudio, playCountdownTimer, playWorkoutCompleteSound } from '../firebaseconfig';
+import { ref, get, set } from 'firebase/database';
 import { useNavigation } from "@react-navigation/native";
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Location from 'expo-location';
@@ -11,12 +11,10 @@ import * as TaskManager from 'expo-task-manager';
 import { LinearGradient } from 'expo-linear-gradient';
 import { commonStyles } from '../assets/common-styles';
 import { AntDesign, Ionicons, FontAwesome, MaterialIcons, FontAwesome5 } from '@expo/vector-icons'; 
-import { useFonts, Poppins_700Bold } from '@expo-google-fonts/poppins';
+import { useFonts, Poppins_700Bold, Poppins_400Regular } from '@expo-google-fonts/poppins';
 import * as Speech from 'expo-speech';
 import { SvgXml } from 'react-native-svg';
 import { badge } from "../assets/badge";
-import * as BackgroundFetch from 'expo-background-fetch';
-
 
 const IntervalTimer = () => {
   const route = useRoute();
@@ -24,7 +22,6 @@ const IntervalTimer = () => {
   const [isIntervalRunning, setIsIntervalRunning] = useState(false);
   const [currentInterval, setCurrentInterval] = useState("Run");
   const [remainingTime, setRemainingTime] = useState(0);
-  const [totalRemainingTime, setTotalRemainingTime] = useState(0);
   const [percent, setPercent] = useState(100);
   const [intervalLength, setIntervalLength] = useState(0);
   const [secondSegment, setSecondSegment] = useState(0);
@@ -42,9 +39,7 @@ const IntervalTimer = () => {
   const [audioOn, isAudioOn] = useState(false);
   const [narration, setNarrationText] = useState("Lets Go!");
   const [bpm, setBpm] = useState("");
-  const [startDateTime, setStartDateTime] = useState(null);
-  const [currentDateTime, setCurrentDateTime] = useState(null);
-  const [totalSecondsInWorkout, setTotalSecondsInWorkout] = useState(0);
+  const [anonymous, isAnonymous] = useState(true);
 
   const navigation = useNavigation();
 
@@ -53,17 +48,8 @@ const IntervalTimer = () => {
   const [fontsLoaded] = useFonts({
     Poppins_700Bold
   });
-  const BACKGROUND_FETCH_TASK = 'background-fetch';
+  
 
-  TaskManager.defineTask(BACKGROUND_FETCH_TASK, async () => {
-    const now = Date.now();
-  
-    console.log(`Got background fetch call at date: ${new Date(now).toISOString()}`);
-  
-    // Be sure to return the successful result type!
-    return BackgroundFetch.BackgroundFetchResult.NewData;
-  });
-  
   const startLocationTracking = async () => {
     setStartTime(new Date());
     await Location.startLocationUpdatesAsync(LOCATION_TRACKING, {
@@ -171,6 +157,7 @@ const IntervalTimer = () => {
 
         if (snapshot.exists()) {
           const dataArray = Object.values(snapshot.val());
+          isAnonymous(auth.currentUser?.isAnonymous);
           setIntervalCount(dataArray.length)
           setData(dataArray);
           setCurrentIndex(0);
@@ -180,15 +167,7 @@ const IntervalTimer = () => {
           setSecondSegment(100 / (dataArray[0].Seconds || 1)); // Prevent division by zero
           setNarrationText(dataArray[0].Text);
           setBpm(dataArray[0].Bpm);
-          setCurrentInterval(dataArray[0].Rep ? 'Run' : 'Walk');
-
-          let totalNumberOfSeconds = 0;
-          dataArray.forEach((item) => {
-          totalNumberOfSeconds += item.Seconds;
-          });
-
-          setTotalSecondsInWorkout(totalNumberOfSeconds);
-
+          setCurrentInterval(dataArray[0].Rep ? 'Run' : 'Walk')
         } else {
           console.log('No data found.');
         }
@@ -205,20 +184,25 @@ const IntervalTimer = () => {
   useEffect(() => {
     if (isIntervalRunning) {
       const interval = setInterval(async () => {
- 
         setRemainingTime((prevRemainingTime) => prevRemainingTime - 1);
-        console.log('remaining time: ' + remainingTime)
-        setPercent((prevProgress) => prevProgress - (100/remainingTime));
+        setPercent((prevProgress) => prevProgress - secondSegment);
   
         if (remainingTime === (intervalLength / 2) && intervalLength > 40) {
           Speech.speak("Halfway through this section! Keep it up!");
         }
   
-        if (remainingTime === 10 && intervalLength > 40) {
+        if (remainingTime === 10 && intervalLength > 20) {
           Speech.speak("10 seconds remaining!");
         }
-  
-        if (remainingTime === 0) {
+
+        if(remainingTime === 4) {
+          
+          await playCountdownTimer()
+          
+        } 
+
+        if (remainingTime === 1) {
+        //  stopCountdownTimer();
           const nextIndex = currentIndex + 1;
         
           if (nextIndex < data.length) {
@@ -238,12 +222,13 @@ const IntervalTimer = () => {
          
             setCurrentIndex(nextIndex);
             setNarrationText(nextItem.Text);
+            setBpm(nextItem.Bpm);
             setCurrentInterval(nextItem.Rep ? 'Run' : 'Walk');
             setRemainingTime(nextItem.Seconds || 0);
             setPercent(100);
             setIntervalLength(nextItem.Seconds || 0);
-            setCurrentDateTime(Date.now());
             setSecondSegment(100 / (nextItem.Seconds || 1));
+           
             isAudioOn(true);
             isWorkoutComplete(false);
             
@@ -268,6 +253,15 @@ const IntervalTimer = () => {
             setIntervalLength(0);
             setSecondSegment(1); // Prevent division by zero
             setTimerState('idle');
+            playWorkoutCompleteSound();
+            if(isWorkoutComplete){
+              if(anonymous?anonymous:auth.currentUser === null) {
+                 Speech.speak("Sign up to save your future workouts, so you can track your achievements!");
+              }
+              else{
+               Speech.speak("Congratulations! You have completed  '" + workoutTitle + "'!, save workout to record and track your achievements!");
+              }
+            }
           }
         }
       }, 1000);
@@ -293,7 +287,6 @@ const IntervalTimer = () => {
   }  */
 
   const startTimer = async () => {
-    setStartDateTime(Date.now());
     console.log('bpm:' + bpm)
     setIsIntervalRunning(true);
     setTimerState("running");
@@ -393,8 +386,8 @@ const IntervalTimer = () => {
         }
         isAudioOn(false);
       }
-      if(auth.currentUser.isAnonymous){
-        navigation.navigate("SignUp");
+      if(anonymous){
+      //  navigation.navigate("SignUp");
       }
       else
       try {
@@ -432,13 +425,14 @@ const IntervalTimer = () => {
             }
             isAudioOn(false);
           }
-          handleSignOut();
-          navigation.navigate("SignIn");
+    
+          navigation.navigate("WorkoutSelection");
       }
        catch (error) {
         console.error('Error saving workout to user profile:', error);
       }
     };
+
 
     const endWorkout = async () => {
       if(audioOn)
@@ -449,10 +443,10 @@ const IntervalTimer = () => {
         }
         isAudioOn(false);
       }
-      if(auth.currentUser === null)
+    /*  if(auth.currentUser === null)
       {navigation.navigate("WorkoutSelection");
-    }
-      if(auth.currentUser.isAnonymous){
+    } */
+      if(anonymous?anonymous:auth.currentUser === null){
         navigation.navigate("WorkoutSelection");
       }
       else
@@ -520,7 +514,7 @@ const IntervalTimer = () => {
              style={commonStyles.buttonGradient}
               start={{ x: 0, y: 0 }}
               end={{ x: 1, y: 0 }}>    
-            <Text style={commonStyles.buttonText}>{"End Workout"}</Text>
+            <Text style={commonStyles.buttonText}>{"Discard"}</Text>
             <Ionicons name="refresh-circle" size={24} color="white" />
           </LinearGradient>
           </TouchableOpacity>
@@ -546,24 +540,10 @@ const IntervalTimer = () => {
         return null;
     }
   };
-
- /* useEffect(() => {
-    const displaySVGURI = async () => {
-      try {
-        const imageFile =  getImageFile('runner.svg');
-        setSvgURL(imageFile);
-      } catch (error) {
-        console.error('Error fetching SVG:', error);
-      }
-    };
-
-    displaySVGURI();
-
-    // Cleanup function (if needed)
-    return () => {
-      // Perform any cleanup logic here
-    };
-  }, []); */
+  const navigateToSignupScreen = () =>
+  {
+  navigation.navigate("SignUp")
+  }
 
 
   return (
@@ -585,7 +565,7 @@ const IntervalTimer = () => {
         {renderButtons()}
       </View>
       <View>
-      {locationStarted ? (
+  {/*}    {locationStarted ? (
         <>
           {currentLocation && (
             <View style={styles.locationInfo}>
@@ -604,24 +584,47 @@ const IntervalTimer = () => {
         <View style={styles.locationInfo}>
           <Text style={styles.whiteCard}>{'Start Tracking'}</Text>
         </View>
-      )}
-      {workoutComplete ? (
-      <Modal style={[{opacity: workoutComplete ? 100 : 0}]}>  
+      )} */}
+      { isIntervalRunning ? (<>
+        <View style={styles.locationInfo}>
+          <Text style={styles.whiteCardLong}>{narration}</Text>
+        </View>
+        </>
+      ) : <></>
+}
+      {workoutComplete ?  (
+      <Modal style={[{opacity: workoutComplete ? 100 : 0},{backgroundColor: '#D9D9D9'}]}>  
       <View style={styles.badge}>
        <SvgXml width={200} height={200} xml={ badge } /> 
        </View>
-      <Text style={styles.titleComplete}>{"CONGRATULATIONS YOU HAVE COMPLETED " + workoutTitle + "!" }</Text>
+       {anonymous?anonymous:auth.currentUser === null ? (<>
+       <View style = {[commonStyles.whiteCard, {height: 200}]}>
+        <Text style={[commonStyles.cardText, {textAlign:'center'}, {fontSize: 20}]}>{"Sign up to save your future workouts, so you can track your achievements!" }</Text>
+       </View>
+      <TouchableOpacity style={[commonStyles.button, {marginLeft: 20}]} onPress={navigateToSignupScreen}>
+      <LinearGradient
+        colors={['#9DCEFF', '#92A3FD']}
+        style={commonStyles.buttonGradient}
+        start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 0 }}>    
+      <Text style={commonStyles.buttonText }><AntDesign name="adduser" size={24} color="white" />{"  Sign Up"}</Text>
+      </LinearGradient>
+      </TouchableOpacity>
+       </>
+       ): <>
+      <Text style={styles.titleComplete}>{"Congratulations you have completed " + workoutTitle + "!" }</Text>
       <TouchableOpacity  style={styles.button} onPress={handleSaveWorkoutPress} >     
       <LinearGradient
         colors={['#C58BF2', '#EEA4CE']}
         style={commonStyles.buttonGradient}
         start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 0 }}>        
-      <Text style={commonStyles.buttonText}>{"Save Workout and Sign Out"}</Text>
+      <Text style={commonStyles.buttonText}>{"Save Workout"}</Text>
       </LinearGradient>
       </TouchableOpacity>
-      <View style={styles.locationInfo}>
-              <View style={styles.whiteCard}>
+      </>}
+   {/*}   <View style={styles.locationInfo}>
+            <View style={styles.whiteCard}>
               <Text style={styles.whiteCardText}>{'Distance\n'+ distance.toFixed(2) +'km'}</Text>
               <FontAwesome5 name="ruler-horizontal" size={40} color="black" />
               </View>
@@ -629,7 +632,7 @@ const IntervalTimer = () => {
               <Text style={styles.whiteCardText}>{'Average Pace\n'} {distance > 0 ? pace.toFixed(2) : 0} {'min/km'}</Text>
               <MaterialIcons name="speed" size={40} color="black" />
               </View>
-            </View>
+            </View> */}
       </Modal> ) : (<></>)}
     </View>
     </View>
@@ -699,6 +702,31 @@ const styles = StyleSheet.create({
         height: 10,
       },
       shadowOpacity: 22,
+    },
+    whiteCardLong: { 
+      textAlignVertical: 'center',
+      textAlign: 'center',
+      alignItems: 'center',
+      fontFamily: 'Poppins_400Regular',
+      backgroundColor: '#FFFFFF',
+      justifyContent: 'center',
+      marginBottom: 0,
+      marginRight: 20,
+      width: 300,
+      height: 140,
+      padding: 18,
+      borderRadius: 20,
+            elevation: 4,
+      shadowOffset: {
+        width: 0,
+        height: 10,
+      },
+      shadowOpacity: 22,
+    },
+    textWrapper: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'center',
     },
     whiteCardText: {
       fontFamily: 'Poppins_400Regular',

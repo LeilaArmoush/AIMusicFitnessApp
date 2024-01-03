@@ -1,4 +1,4 @@
-import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword } from '@firebase/auth';
+import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, sendPasswordResetEmail} from '@firebase/auth';
 import { initializeApp } from '@firebase/app';
 import { getDatabase, ref as dbref, set } from "firebase/database";
 import {  getStorage, ref as storageRef, getDownloadURL, listAll} from '@firebase/storage';
@@ -43,9 +43,10 @@ export const playAudio = async (audioFileName) => {
 
     // Create a sound object
     soundObject = new Audio.Sound();
+    //TODO: THIS NEEDS TO BE TRUE FOR OUTDOOR MODE!
     await Audio.setAudioModeAsync(
       {
-        staysActiveInBackground: true,
+        staysActiveInBackground: false,
       }
     );
 
@@ -89,6 +90,89 @@ export const stopAudio = async () => {
   }
 };
 
+let countdownSoundObject;
+
+export const playCountdownTimer= async () => {
+  countdownSoundObject = new Audio.Sound();
+  try {
+    // Assuming audioFileName is an object and has a property like 'name'
+    const audioRef = storageRef(storage, 'audio/countdown-sound-effect-8-bit-151797.mp3');
+    const audioUrl = await getDownloadURL(audioRef);
+    // Create a sound object
+    await Audio.setAudioModeAsync(
+      {
+        staysActiveInBackground: true,
+      }
+    );
+
+    // Load and play the audio
+    await countdownSoundObject.loadAsync({ uri: audioUrl });
+    await countdownSoundObject.playAsync();
+    await countdownSoundObject.setIsLoopingAsync(false);
+  } catch (error) {
+    console.error('Error playing audio:', error);
+  }
+  setTimeout(someMethod,
+    4000);
+  }
+
+  export const stopCountdownTimer = async () => {
+    try {
+      // Check if soundObject is defined before unloading
+      if (countdownSoundObject) {
+        await countdownSoundObject.stopAsync();
+        await countdownSoundObject.setIsLoopingAsync(false);
+       await countdownSoundObject.unloadAsync();
+       // soundObject.setOnPlaybackStatusUpdate(null); // Reset playback status update
+      }
+    } catch (error) {
+      console.error('Error stopping audio:', error);
+    }
+  };
+
+  let workoutEndedSoundObject;
+  
+export const playWorkoutCompleteSound= async () => {
+  workoutEndedSoundObject = new Audio.Sound();
+  try {
+    // Assuming audioFileName is an object and has a property like 'name'
+    const audioRef = storageRef(storage, 'audio/trumpet-fanfare-success-epic-stock-media-1-00-02 (Joined by Happy Scribe).mp3');
+    const audioUrl = await getDownloadURL(audioRef);
+    // Create a sound object
+    await Audio.setAudioModeAsync(
+      {
+        staysActiveInBackground: true,
+      }
+    );
+
+    // Load and play the audio
+    await workoutEndedSoundObject.loadAsync({ uri: audioUrl });
+    await workoutEndedSoundObject.playAsync();
+    await workoutEndedSoundObject.setIsLoopingAsync(false);
+  } catch (error) {
+    console.error('Error playing audio:', error);
+  }
+  setTimeout(someMethod,
+    4000);
+  }
+
+
+
+  export const stopWorkoutCompleteSound = async () => {
+    try {
+      // Check if soundObject is defined before unloading
+      if (workoutEndedSoundObject) {
+        await workoutEndedSoundObject.stopAsync();
+        await workoutEndedSoundObject.setIsLoopingAsync(false);
+       await workoutEndedSoundObject.unloadAsync();
+       // soundObject.setOnPlaybackStatusUpdate(null); // Reset playback status update
+      }
+    } catch (error) {
+      console.error('Error stopping audio:', error);
+    }
+  };
+
+
 export const pauseAudio = async () => {
   try {
     // Check if soundObject is defined before unloading
@@ -129,6 +213,8 @@ export { db, app }
 
 export const auth = getAuth(app);
 
+
+
 export const getUserData = async (credential) => {
   try {
   
@@ -163,6 +249,15 @@ export const handleSignUp = async (email, password) => {
   }
 };
 
+export const handlePasswordReset = async (email) => {
+  await sendPasswordResetEmail(auth, email)
+    .then(() => {
+      console.log("Password reset email sent successfully!");
+    })
+    .catch((error) => {
+      console.error("Error sending password reset email:", error);
+    });
+  }
 export const handleSignIn = async (email, password) => {
   try {
     // Sign in the user with the provided email and password

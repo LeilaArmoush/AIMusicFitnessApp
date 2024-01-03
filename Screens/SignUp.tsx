@@ -12,11 +12,17 @@ import { commonStyles } from '../assets/common-styles'
 import { SvgUri, SvgXml } from 'react-native-svg';
 import { runBeatsTitleAndLogo } from '../assets/RunBeatsLogoAndTitle';
 import Checkbox from 'expo-checkbox';
+import Linking from 'expo-linking';
 
 const SignUpScreen = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isChecked, setChecked] = useState(false);
+  const [isCheckboxChecked, setIsCheckboxChecked] = useState(false);
+
+  const handleCheckboxChange = () => {
+    setIsCheckboxChecked(!isCheckboxChecked);
+  };
   const navigatior = useNavigation();
  
   const [fontsLoaded] = useFonts({
@@ -24,6 +30,7 @@ const SignUpScreen = () => {
   });
 
   const handleSignUpPress = async () => {
+    if (isCheckboxChecked) {
     try {
       const userProfile = await handleSignUp(email, password);
       navigatior.navigate('Welcome', { userProfile });
@@ -31,7 +38,11 @@ const SignUpScreen = () => {
     } catch (error) {
       Alert.alert('Sign Up Failed', error.message);
     }
+  }
+  else {
+    Alert.alert('Sign Up Failed', 'Please accept the terms and conditions and privacy policy.');
   };
+};
 
   const navigateToSignIn = () => {
     // Use navigation to navigate to the Sign In screen
@@ -88,11 +99,17 @@ const SignUpScreen = () => {
       <View  style={commonStyles.checkboxContainer}>
        <Checkbox
        style={commonStyles.checkbox}
-          value={isChecked}
-          onValueChange={setChecked}
-          color={isChecked ? '#92A3FD' : undefined}
+       value={isCheckboxChecked} 
+       onValueChange={handleCheckboxChange}
+          color={isCheckboxChecked ? '#92A3FD' : undefined}
         />
-        <Text style={commonStyles.checkboxText}> {'I accept the terms and conditions, and \n privacy policy'}</Text>
+        <Text style={[styles.checkboxText, {color: '#000'}]}> 
+          I accept the {' '}
+             <Text  onPress={() => Linking.openURL('https://tandcsprivacypolicy.web.app/')}
+           style={[styles.checkboxText, {color: '#C58BF2'}, {textDecorationLine: 'underline'}]}>
+     Terms and Conditions {'\n'} and Privacy Policy.
+     </Text> 
+    </Text>
         </View>
       <TouchableOpacity style={commonStyles.button} onPress={handleSignUpPress}>
       <LinearGradient
@@ -103,14 +120,25 @@ const SignUpScreen = () => {
       <Text style={commonStyles.buttonText}><AntDesign name="adduser" size={24} color="white" />{"  Sign Up"}</Text>
       </LinearGradient>
       </TouchableOpacity>
+      <View style={styles.textContainer}>
+  <View style={styles.rowContainer}>
+    <Text style={styles.text}>{'Already have an account?'}</Text>
+    <Text style={styles.loginText} selectionColor={'#C58BF2'} onPress={navigateToSignIn}>
+      {"Login"}
+    </Text>
+  </View>
+  <View style={styles.rowContainer}>
+    <Text style={styles.text}>{'Sign Up Later?'}</Text>
+    <Text style={styles.loginText} selectionColor={'#C58BF2'} onPress={navigateToWelcome}>
+      {"Skip For Now"}
+    </Text>
+  </View>
+</View>
       <View style={styles.orContainer}>
         <Text style={styles.orText}>{'Or'}</Text>
     </View>
-    <View style={styles.textContainer}>
-      <Text style = {styles.text} >{'Already have an account?'}</Text>
-      <Text style={styles.loginText} selectionColor={'#C58BF2'} onPress={navigateToSignIn}> {"Login"}</Text>
-      </View>
-      <TouchableOpacity  style={commonStyles.button} onPress={handleSkipSignIn} >     
+   
+     {/*<TouchableOpacity  style={commonStyles.button} onPress={handleSkipSignIn} >     
       <LinearGradient
         colors={['#C58BF2', '#EEA4CE']}
         style={commonStyles.buttonGradient}
@@ -118,7 +146,7 @@ const SignUpScreen = () => {
           end={{ x: 1, y: 0 }}>        
       <Text style={commonStyles.buttonText}>{"Skip for Now  "}<Feather name="skip-forward" size={24} color="white"/></Text>
       </LinearGradient>
-      </TouchableOpacity>
+      </TouchableOpacity> */}
     </View>
   );
 };
@@ -135,13 +163,19 @@ const styles = StyleSheet.create({
     //alignItems: 'center',
   //  width: '50%',
   //  aspectRatio: 1, // Ensure the container maintains a square aspect ratio
-    marginTop: 130, // Adjust as needed
+  //  marginTop: 20, // Adjust as needed
   },
   textContainer: {
+    // flexDirection: 'row', // Remove this line
+    // alignItems: 'center', // Remove this line
+    marginTop: 20,
+    // Adjust marginBottom if needed
+    // marginBottom: 20,
+  },
+  rowContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginTop: 20,
-    marginBottom: 20,
+    marginBottom: 5, // Adjust marginBottom between rows if needed
   },
   textInput: {
     fontFamily: 'Poppins_400Regular',
@@ -152,7 +186,9 @@ const styles = StyleSheet.create({
     fontFamily: 'Poppins_400Regular',
     fontSize: 12,
     marginLeft: 8,
-    marginTop: 5
+    marginTop: 5,
+    
+    
    // flexDirection: 'row',
    // alignItems: 'center',
   },
@@ -165,12 +201,13 @@ const styles = StyleSheet.create({
   text: {
     fontFamily: 'Poppins_400Regular',
     marginRight: 5, // Adjust the spacing between the texts
-    marginTop: 60,
+    flexWrap: 'wrap',
+    alignSelf: 'center',
   },
   loginText: {
     fontFamily: 'Poppins_400Regular',
     color: '#C58BF2',
-    marginTop: 60,
+   // marginTop: 20, // Adjust the marginTop as needed
   },
   orContainer: {
     flexDirection: 'row',

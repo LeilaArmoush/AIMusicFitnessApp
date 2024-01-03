@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import { View, TextInput, TouchableOpacity, StyleSheet, Alert, Text} from 'react-native';
-import { handleSignIn } from '../firebaseconfig'; // Import your handleSignIn function
 import { useNavigation } from "@react-navigation/native";
 import { useRoute } from "@react-navigation/native";
 import { LinearGradient } from 'expo-linear-gradient';
@@ -9,13 +8,11 @@ import { MaterialCommunityIcons  } from '@expo/vector-icons';
 import { commonStyles } from '../assets/common-styles'
 import { SvgXml } from 'react-native-svg';
 import { runBeatsTitleAndLogo } from '../assets/RunBeatsLogoAndTitle';
-import { auth } from '../firebaseconfig';
+import { handlePasswordReset } from '../firebaseconfig';
 
-const SignInScreen = () => {
+const ForgottenPassword = () => {
   const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
   const navigation = useNavigation();
-  const [isChecked, setChecked] = useState(false);
 
   const [fontsLoaded] = useFonts({
     Poppins_700Bold,
@@ -23,20 +20,15 @@ const SignInScreen = () => {
 
   const route = useRoute();
 
-  const handleSignInPress = async () => {
-    try {
-      const userProfile = await handleSignIn(email, password);
-     
-     navigation.navigate('Welcome', { userProfile });
+  const handlePressPasswordReset = async () => {
+    try { 
+      console.log('email', email);
+    await handlePasswordReset(email);
         
     } catch (error) {
-      Alert.alert('Sign In Failed', error.message);
+      Alert.alert('Sending Reset Password Failed', error.message);
     }
   }; 
-
-  const handleForgottenPassword = async (email) => {
-    navigation.navigate('ForgottenPassword');
-  }
 
   if (!fontsLoaded) {
     // Font not yet loaded, you can return a loading indicator or wait
@@ -56,23 +48,13 @@ const SignInScreen = () => {
         onChangeText={setEmail}
         value={email}
       />
-      <TextInput
-        style={commonStyles.input}
-        placeholder="Password"
-        secureTextEntry
-        onChangeText={setPassword}
-        value={password}
-      />
-    <TouchableOpacity  style={commonStyles.checkboxText} onPress={handleForgottenPassword} >
-      <Text style={[commonStyles.checkboxText, {color:'#C58BF2'}, {marginTop: -10}, {marginBottom: 10}]}>{'forgotten password?' }</Text>
-      </TouchableOpacity>
-      <TouchableOpacity  style={commonStyles.button} onPress={handleSignInPress} >
+      <TouchableOpacity  style={commonStyles.button} onPress={handlePressPasswordReset} >
     <LinearGradient
   colors={['#92A3FD', '#9DCEFF']}
   style={commonStyles.buttonGradient}
   start={{ x: 0, y: 0 }}
     end={{ x: 1, y: 0 }}> 
-    <Text style={commonStyles.buttonText}><MaterialCommunityIcons name="login" size={24} color="white" />  {"Login"}</Text>   
+    <Text style={commonStyles.buttonText}><MaterialCommunityIcons name="login" size={24} color="white" />  {"Send Rest Password Link"}</Text>   
 </LinearGradient>
 </TouchableOpacity>
     </View>
@@ -129,4 +111,4 @@ const styles = StyleSheet.create({
   }
 });
 
-export default SignInScreen;
+export default ForgottenPassword;
