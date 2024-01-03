@@ -35,7 +35,8 @@ const [seconds, setSeconds] = useState();
   };
 
   const navigateToWorkoutList = () => {
-    navigation.navigate("WorkoutSelection")
+   // navigation.navigate("WorkoutSelection")
+   navigation.navigate("WorkoutSelection");
   }
   const handleRunProgramMenuPress = () => {
     isRunProgramMenuOpen(true)

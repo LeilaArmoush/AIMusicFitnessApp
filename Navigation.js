@@ -9,7 +9,8 @@ import WorkoutSelection from "./Screens/WorkoutSelection";
 import { initializeFirebase, auth } from './firebaseconfig'; // Adjust the import path accordingly
 import SignupScreen from './Screens/SignUp'; // Import the new SignupScreen
 import WelcomeScreen from './Screens/Welcome';
-import { commonStyles, header } from './assets/common-styles';
+import OutdoorTimer from './Screens/OutdoorTimer';
+import ForgottenPassword from './Screens/ForgottenPassword';
 
 
 const Tab = createBottomTabNavigator();
@@ -69,11 +70,20 @@ export default function Navigation() {
         />
         <Stack.Screen 
         name="WorkoutSelection" 
-        component={WorkoutSelection} />
+        component={WorkoutSelection}
+        options={{ title: 'Workout Selection'}} />
         <Stack.Screen
          name="Timer"
-          component={Timer} />
+          component={Timer}
+          options={{ headerShown: false}}/>
           </>
+          <Stack.Screen
+          name="OutdoorTimer"
+          component={OutdoorTimer} />
+                    <Stack.Screen
+          name="ForgottenPassword"
+          component={ForgottenPassword}
+          options={{title: 'Forgotten Password Reset'}} />
       </Stack.Navigator>
     </NavigationContainer>
   );
