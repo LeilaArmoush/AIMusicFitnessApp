@@ -126,7 +126,7 @@ export const commonStyles = StyleSheet.create({
       headerTitleStyle: {
         fontWeight: 'bold',
       },
-      whiteCard: {
+        whiteCard: {
         alignSelf: 'center',
         flexDirection: 'row',
         justifyContent: 'space-between',

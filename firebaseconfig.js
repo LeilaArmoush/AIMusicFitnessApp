@@ -1,9 +1,8 @@
-import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, sendPasswordResetEmail} from '@firebase/auth';
+import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, sendPasswordResetEmail, sendEmailVerification, signOut} from '@firebase/auth';
 import { initializeApp } from '@firebase/app';
 import { getDatabase, ref as dbref, set } from "firebase/database";
 import {  getStorage, ref as storageRef, getDownloadURL, listAll} from '@firebase/storage';
 import { Audio } from 'expo-av';
-
 
 const firebaseConfig = {
   apiKey: "AIzaSyDQgul1UxStJ3vQMGvLQ4XfE6hWyJJX2bA",
@@ -242,7 +241,10 @@ export const handleSignUp = async (email, password) => {
   try {
     // Create a new user with the provided email and password
     const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+    await sendEmailVerification(userCredential.user);
+    signOut(auth);
     return getUserData(userCredential);
+    
   } catch (error) {
     console.error(error);
     throw error;

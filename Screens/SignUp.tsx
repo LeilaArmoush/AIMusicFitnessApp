@@ -7,9 +7,9 @@ import { useFonts, Poppins_700Bold, Poppins_400Regular } from '@expo-google-font
 import { AntDesign, Feather, Ionicons } from '@expo/vector-icons'; 
 import AppLoading from 'expo-app-loading';
 import { signInAnonymously } from "firebase/auth";
-import {auth, getSvgDownloadUrl} from '../firebaseconfig';
+import {auth} from '../firebaseconfig';
 import { commonStyles } from '../assets/common-styles'
-import { SvgUri, SvgXml } from 'react-native-svg';
+import { SvgXml } from 'react-native-svg';
 import { runBeatsTitleAndLogo } from '../assets/RunBeatsLogoAndTitle';
 import Checkbox from 'expo-checkbox';
 import Linking from 'expo-linking';
@@ -19,6 +19,7 @@ const SignUpScreen = () => {
   const [password, setPassword] = useState('');
   const [isChecked, setChecked] = useState(false);
   const [isCheckboxChecked, setIsCheckboxChecked] = useState(false);
+  const [emailVerificationSent, isEmailVerificationSent] = useState(false);
 
   const handleCheckboxChange = () => {
     setIsCheckboxChecked(!isCheckboxChecked);
@@ -33,8 +34,7 @@ const SignUpScreen = () => {
     if (isCheckboxChecked) {
     try {
       const userProfile = await handleSignUp(email, password);
-      navigatior.navigate('Welcome', { userProfile });
-      
+      isEmailVerificationSent(true);
     } catch (error) {
       Alert.alert('Sign Up Failed', error.message);
     }
@@ -79,7 +79,7 @@ const SignUpScreen = () => {
   } else {
   return (
     <View style={styles.container}>  
-    <View style={styles.logoContainer}>
+    <View>
     <SvgXml width={150} height={100} xml={ runBeatsTitleAndLogo } />
     <Text style={styles.logoText}>{'Run Flow'}</Text>
     </View>
@@ -111,7 +111,10 @@ const SignUpScreen = () => {
      </Text> 
     </Text>
         </View>
-      <TouchableOpacity style={commonStyles.button} onPress={handleSignUpPress}>
+        {emailVerificationSent ? (<>
+          <Text style={styles.verifyEmailText}>{'Please check your email to verify account!'}</Text>
+        </>)
+      : (<><TouchableOpacity style={commonStyles.button} onPress={handleSignUpPress}>
       <LinearGradient
         colors={['#9DCEFF', '#92A3FD']}
         style={commonStyles.buttonGradient}
@@ -120,6 +123,7 @@ const SignUpScreen = () => {
       <Text style={commonStyles.buttonText}><AntDesign name="adduser" size={24} color="white" />{"  Sign Up"}</Text>
       </LinearGradient>
       </TouchableOpacity>
+      </>)}
       <View style={styles.textContainer}>
   <View style={styles.rowContainer}>
     <Text style={styles.text}>{'Already have an account?'}</Text>
@@ -134,10 +138,6 @@ const SignUpScreen = () => {
     </Text>
   </View>
 </View>
-      <View style={styles.orContainer}>
-        <Text style={styles.orText}>{'Or'}</Text>
-    </View>
-   
      {/*<TouchableOpacity  style={commonStyles.button} onPress={handleSkipSignIn} >     
       <LinearGradient
         colors={['#C58BF2', '#EEA4CE']}
@@ -158,19 +158,9 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
-  logoContainer: {
-   // flex: 1,
-    //alignItems: 'center',
-  //  width: '50%',
-  //  aspectRatio: 1, // Ensure the container maintains a square aspect ratio
-  //  marginTop: 20, // Adjust as needed
-  },
   textContainer: {
-    // flexDirection: 'row', // Remove this line
-    // alignItems: 'center', // Remove this line
     marginTop: 20,
-    // Adjust marginBottom if needed
-    // marginBottom: 20,
+
   },
   rowContainer: {
     flexDirection: 'row',
@@ -203,6 +193,13 @@ const styles = StyleSheet.create({
     marginRight: 5, // Adjust the spacing between the texts
     flexWrap: 'wrap',
     alignSelf: 'center',
+  },
+  verifyEmailText: {
+    fontFamily: 'Poppins_700Bold',
+    marginRight: 5, // Adjust the spacing between the texts
+    flexWrap: 'wrap',
+    alignSelf: 'center',
+    fontSize: 15,
   },
   loginText: {
     fontFamily: 'Poppins_400Regular',

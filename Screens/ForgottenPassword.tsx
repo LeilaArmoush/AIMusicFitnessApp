@@ -12,6 +12,7 @@ import { handlePasswordReset } from '../firebaseconfig';
 
 const ForgottenPassword = () => {
   const [email, setEmail] = useState('');
+  const [passwordSent, setPasswordSent] = useState(false); 
   const navigation = useNavigation();
 
   const [fontsLoaded] = useFonts({
@@ -24,6 +25,7 @@ const ForgottenPassword = () => {
     try { 
       console.log('email', email);
     await handlePasswordReset(email);
+    setPasswordSent(true);
         
     } catch (error) {
       Alert.alert('Sending Reset Password Failed', error.message);
@@ -48,15 +50,20 @@ const ForgottenPassword = () => {
         onChangeText={setEmail}
         value={email}
       />
-      <TouchableOpacity  style={commonStyles.button} onPress={handlePressPasswordReset} >
-    <LinearGradient
-  colors={['#92A3FD', '#9DCEFF']}
-  style={commonStyles.buttonGradient}
-  start={{ x: 0, y: 0 }}
-    end={{ x: 1, y: 0 }}> 
-    <Text style={commonStyles.buttonText}><MaterialCommunityIcons name="login" size={24} color="white" />  {"Send Rest Password Link"}</Text>   
-</LinearGradient>
-</TouchableOpacity>
+      {passwordSent ? (<>
+         <Text style={styles.verifyEmailText}>{'Check your email to reset password!'}</Text>
+         </>
+      ):(
+        <><TouchableOpacity style={commonStyles.button} onPress={handlePressPasswordReset}>
+        <LinearGradient
+          colors={['#9DCEFF', '#92A3FD']}
+          style={commonStyles.buttonGradient}
+          start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 0 }}>    
+        <Text style={commonStyles.buttonText}><MaterialCommunityIcons name="login" size={24} color="white" />{"  Reset Password"}</Text>
+        </LinearGradient>
+        </TouchableOpacity>
+        </>)}
     </View>
   );
 };
@@ -108,7 +115,14 @@ const styles = StyleSheet.create({
     fontSize: 25,
     color: '#C58BF2',
     marginBottom: 20,
-  }
+  },
+  verifyEmailText: {
+    fontFamily: 'Poppins_700Bold',
+    marginRight: 5, // Adjust the spacing between the texts
+    flexWrap: 'wrap',
+    alignSelf: 'center',
+    fontSize: 15,
+  },
 });
 
 export default ForgottenPassword;

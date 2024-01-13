@@ -10,26 +10,30 @@ import * as Location from 'expo-location';
 import * as TaskManager from 'expo-task-manager';
 import { LinearGradient } from 'expo-linear-gradient';
 import { commonStyles } from '../assets/common-styles';
-import { AntDesign, Ionicons, FontAwesome, MaterialIcons, FontAwesome5 } from '@expo/vector-icons'; 
-import { useFonts, Poppins_700Bold, Poppins_400Regular } from '@expo-google-fonts/poppins';
+import { AntDesign, Ionicons, FontAwesome } from '@expo/vector-icons'; 
+import { useFonts, Poppins_700Bold } from '@expo-google-fonts/poppins';
 import * as Speech from 'expo-speech';
 import { SvgXml } from 'react-native-svg';
 import { badge } from "../assets/badge";
+import { reload } from "@firebase/auth";
 
 const IntervalTimer = () => {
   const route = useRoute();
   const [timerState, setTimerState] = useState("idle"); // "idle", "running", "paused"
   const [isIntervalRunning, setIsIntervalRunning] = useState(false);
-  const [currentInterval, setCurrentInterval] = useState("Run");
+  const [currentInterval, setCurrentInterval] = useState("");
   const [remainingTime, setRemainingTime] = useState(0);
   const [percent, setPercent] = useState(100);
   const [intervalLength, setIntervalLength] = useState(0);
   const [secondSegment, setSecondSegment] = useState(0);
   const [data, setData] = useState([]); // State to store fetched data
   const [currentIndex, setCurrentIndex] = useState(0);
-  const [intervalCount, setIntervalCount] = useState(0);
+  const [sectionCount, setSectionCount] = useState(0);
+  const [intervalsRemaining, setIntervalsRemaining] = useState(0);
+  const [totalIntervalCount, setTotalIntervalCount] = useState(0);
   const [workoutComplete, isWorkoutComplete] = useState(false)
   const [workoutTitle, setWorkoutTitle] = useState(route.params?.workoutTitle);
+  const[workoutType, setWorkoutType] = useState(route.params?.workoutTitle.split(':-')[0]);//['Couch-To-5k', 'elliptical'
   const [locationStarted, setLocationStarted] = useState(false);
   const [currentLocation, setCurrentLocation] = useState(null);
   const [distance, setDistance] = useState(0);
@@ -37,9 +41,16 @@ const IntervalTimer = () => {
   const [pace, setPace] = useState(0);
   const [musicFilename, setMusicFilename] = useState("");
   const [audioOn, isAudioOn] = useState(false);
-  const [narration, setNarrationText] = useState("Lets Go!");
+  const [narration, setNarrationText] = useState("");
   const [bpm, setBpm] = useState("");
   const [anonymous, isAnonymous] = useState(true);
+  const [totalTimeRemaining, setTotalTimeRemaining] = useState(0);
+  const [workoutTypeLabels, setWorkoutTypeLabels] = useState({});
+  const [effortIntervalText, setEffortIntervalText] = useState("");  
+  const [firstIntervalText, setFirstIntervalText] = useState("");
+  const [LastIntervalText, setLastIntervalText] = useState("");
+  const [RecoveryIntervalText, setRecoveryIntervalText] = useState("");
+
 
   const navigation = useNavigation();
 
@@ -158,84 +169,99 @@ const IntervalTimer = () => {
         if (snapshot.exists()) {
           const dataArray = Object.values(snapshot.val());
           isAnonymous(auth.currentUser?.isAnonymous);
-          setIntervalCount(dataArray.length)
+          setSectionCount(dataArray.length)
           setData(dataArray);
           setCurrentIndex(0);
+          
           setRemainingTime(dataArray[0].Seconds || 0);
           setPercent(100);
           setIntervalLength(dataArray[0].Seconds || 0);
           setSecondSegment(100 / (dataArray[0].Seconds || 1)); // Prevent division by zero
-          setNarrationText(dataArray[0].Text);
+          let firstText = dataArray[0].Text.First
+          setNarrationText(firstText);
           setBpm(dataArray[0].Bpm);
-          setCurrentInterval(dataArray[0].Rep ? 'Run' : 'Walk')
-        } else {
+
+          const totalIntervals = dataArray.filter((item) => item.Rep === true).length;
+          setTotalIntervalCount(totalIntervals);
+          const workoutType = workoutTitle.split(':-')[0]
+          const totalTimeInSeconds = dataArray.reduce((total, item) => total + item.Seconds, 0);
+          setTotalTimeRemaining(totalTimeInSeconds);
+          setIntervalsRemaining(totalIntervals);
+          } else {
           console.log('No data found.');
         }
       } catch (error) {
         console.error('Error fetching data:', error);
       }
-//    }
     };
     if (workoutTitle) {
       fetchData();
     }
   }, [workoutTitle]);
 
+  
+  useEffect(() => {
+
+    const fetchWorkoutTypeData = async () => {
+      AsyncStorage.clear()
+      try {
+        const dataRef = ref(db, 'WorkoutTypes/' + workoutType +'/');
+        const snapshot = await get(dataRef);
+     //   console.log('database workouttype:' + workoutType)
+
+        if (snapshot.exists()) {
+          const workoutTypeObject = Object.values(snapshot.val());
+          
+          setWorkoutTypeLabels(workoutTypeObject);
+          setEffortIntervalText(workoutTypeObject[0].toString());
+          setFirstIntervalText(workoutTypeObject[1].toString());
+          setLastIntervalText(workoutTypeObject[2].toString());
+          setRecoveryIntervalText(workoutTypeObject[3].toString());
+
+       //   console.log("Workout Object type:" + workoutTypeObject)
+
+          } else {
+          console.log('No data found.');
+        }
+      } catch (error) {
+        console.error('Error fetching data:', error);
+      }
+    };
+    if (workoutTypeLabels) {
+       fetchWorkoutTypeData();
+    }
+  }, [workoutTypeLabels]);
+
+ /* const workoutTypeObject = {
+    "Couch-To-5k": {
+      FirstIntervalText: "Warm Up Walk",
+      EffortIntervalText: "Run",
+      RecoveryIntervalText: "Walk",
+      LastIntervalText: "Cool Down Walk",
+    },
+    "elliptical": {
+      FirstIntervalText: "Warm Up",
+      EffortIntervalText: "Work Hard!",
+      RecoveryIntervalText: "Recover",
+      LastIntervalText: "Cool Down",
+    },
+  } */
+
+  let newIntervalCount = 0;
+
   useEffect(() => {
     if (isIntervalRunning) {
       const interval = setInterval(async () => {
+   
+        setTotalTimeRemaining((prevTotalTimeRemaining) => prevTotalTimeRemaining - 1);
+
         setRemainingTime((prevRemainingTime) => prevRemainingTime - 1);
         setPercent((prevProgress) => prevProgress - secondSegment);
-  
-        if (remainingTime === (intervalLength / 2) && intervalLength > 40) {
-          Speech.speak("Halfway through this section! Keep it up!");
-        }
-  
-        if (remainingTime === 10 && intervalLength > 20) {
-          Speech.speak("10 seconds remaining!");
-        }
+       
+        if (currentInterval===LastIntervalText&&remainingTime===1)
+        {
 
-        if(remainingTime === 4) {
-          
-          await playCountdownTimer()
-          
-        } 
-
-        if (remainingTime === 1) {
-        //  stopCountdownTimer();
-          const nextIndex = currentIndex + 1;
-        
-          if (nextIndex < data.length) {
-            const nextItem = data[nextIndex];
-            const plusTwoItem = data[nextIndex + 1];
-        
-            if (audioOn) {
-              await stopAudio();
-              if (narration !== null) {
-                await Speech.stop();
-              }
-              isAudioOn(false);
-            }
-
-            const bpmFilename = await getRandomFileNameByBPM(nextItem.Bpm);
-            await playAudio(bpmFilename)
-         
-            setCurrentIndex(nextIndex);
-            setNarrationText(nextItem.Text);
-            setBpm(nextItem.Bpm);
-            setCurrentInterval(nextItem.Rep ? 'Run' : 'Walk');
-            setRemainingTime(nextItem.Seconds || 0);
-            setPercent(100);
-            setIntervalLength(nextItem.Seconds || 0);
-            setSecondSegment(100 / (nextItem.Seconds || 1));
-           
-            isAudioOn(true);
-            isWorkoutComplete(false);
-            
-            // Use updated narration text directly
-            
-            await Speech.speak(nextItem.Text);
-          } else {
+            console.log('Workout complete should be false:' + workoutComplete + 'nextIndex:' + (currentIndex) + 'data.length:' + data.length);
             if (audioOn) {
               await stopAudio();
               if (narration !== null) {
@@ -246,9 +272,10 @@ const IntervalTimer = () => {
         
             setIsIntervalRunning(false);
             isWorkoutComplete(true);
-            setIntervalCount(data.length);
+           // setIntervalCount(data.length);
             setData([]);
             setRemainingTime(0);
+            setTotalTimeRemaining(0);
             setPercent(100);
             setIntervalLength(0);
             setSecondSegment(1); // Prevent division by zero
@@ -262,7 +289,118 @@ const IntervalTimer = () => {
                Speech.speak("Congratulations! You have completed  '" + workoutTitle + "'!, save workout to record and track your achievements!");
               }
             }
+        }
+
+        if(currentIndex===0)
+        {
+        setCurrentInterval(firstIntervalText)
+        }
+        let firstText = data[currentIndex].Text.First;
+        if(remainingTime === (Math.round(intervalLength-1)))
+        {
+          setNarrationText(firstText);
+          Speech.speak(firstText);
+        }
+        if(intervalLength > 40)
+        {
+          let quarterText = data[currentIndex].Text.Second;
+         
+          let halfText = data[currentIndex].Text.Third;
+      
+          let threeQuarterText = data[currentIndex].Text.Fourth;
+        
+          if (remainingTime === (Math.round(intervalLength *(3/4)))) {
+            setNarrationText(quarterText);
+            Speech.speak(quarterText);
           }
+        if (remainingTime === (Math.round(intervalLength / 2))) {
+          setNarrationText(halfText);
+          Speech.speak(halfText);
+        }
+        if (remainingTime === (Math.round(intervalLength /4))) {
+          setNarrationText(threeQuarterText);
+          Speech.speak(threeQuarterText);
+        }
+      }
+       if(intervalLength>180)
+       {
+        if(intervalLength-remainingTime===180) {
+        if (audioOn) {
+          await stopAudio();
+          if (narration !== null) {
+            await Speech.stop();
+          }
+          isAudioOn(false);
+        }
+        const bpmFilename = await getRandomFileNameByBPM(data[currentIndex].Bpm);
+        await playAudio(bpmFilename)
+        isAudioOn(true);
+       }
+      }
+
+        if (remainingTime === 10 && intervalLength > 20) {
+          Speech.speak("10 seconds remaining!");
+        }
+
+        if(remainingTime === 4) {      
+          await playCountdownTimer()
+        } 
+       
+        if (remainingTime === 1) {
+          const nextIndex = currentIndex + 1;
+
+          let currentIntervalLabel = "";
+  
+          if (nextIndex + 1 === data.length) {
+            currentIntervalLabel =LastIntervalText
+         } else {
+           currentIntervalLabel = data[nextIndex].Rep
+             ? effortIntervalText
+             : RecoveryIntervalText
+         }; 
+         if (workoutComplete === false) { 
+         setCurrentInterval(currentIntervalLabel)
+
+            const nextItem = data[nextIndex];     
+            
+              console.log('Workout complete should be false:' + workoutComplete + 'currentIndex+1:' + (currentIndex +1) + 'data.length:' + data.length);
+              if (nextIndex + 1 === data.length) {
+                setIntervalsRemaining(0)
+              }
+              else if(currentIndex!==0&&data[currentIndex].Rep===true)
+              { 
+                newIntervalCount = newIntervalCount + 1;
+                setIntervalsRemaining(totalIntervalCount-newIntervalCount);
+              }
+        
+        
+            if (audioOn) {
+              await stopAudio();
+              if (narration !== null) {
+                await Speech.stop();
+              }
+              isAudioOn(false);
+            }
+
+            const bpmFilename = await getRandomFileNameByBPM(nextItem.Bpm);
+            await playAudio(bpmFilename)
+         
+            setCurrentIndex(nextIndex);
+            let firstText = nextItem.Text.First
+            setNarrationText(firstText);
+            setBpm(nextItem.Bpm);
+            setRemainingTime(nextItem.Seconds || 0);
+            setPercent(100);
+            setIntervalLength(nextItem.Seconds || 0);
+            setSecondSegment(100 / (nextItem.Seconds || 1));
+           
+            isAudioOn(true);
+            isWorkoutComplete(false);
+            
+            // Use updated narration text directly
+            
+           // await Speech.speak(firstText);
+          }  
         }
       }, 1000);
   
@@ -270,21 +408,7 @@ const IntervalTimer = () => {
         clearInterval(interval);
       };
     }
-  }, [isIntervalRunning, remainingTime, secondSegment, currentIndex, data, audioOn, musicFilename, intervalLength, narration, bpm]);
-  
-  
-/* const pathToRunTrack = storageReference('run2.mp3')
-  async function playSound(pathToTrack) {
-    
-    console.log('Loading Sound');
-    const { sound } = await Audio.Sound.createAsync(
-      { uri: `file://${pathToTrack}` } // Use the file:// protocol for local files
-    );
-    setSound(sound);
-  
-    console.log('Playing Sound');
-    await sound.playAsync();
-  }  */
+  }, [isIntervalRunning, remainingTime, secondSegment, currentIndex, data, audioOn, musicFilename, intervalLength, narration, bpm, intervalsRemaining]);
 
   const startTimer = async () => {
     console.log('bpm:' + bpm)
@@ -301,7 +425,7 @@ const IntervalTimer = () => {
     }
     if(narration!==null)
     {
-      Speech.speak(narration);
+      Speech.speak('Lets Go!');
     }
   };
 
@@ -326,36 +450,6 @@ const IntervalTimer = () => {
     });
   };
 
-  const resumeTimer = async () => {
-    setIsIntervalRunning(true);
-    setTimerState("running");
-    startLocationTracking();
-  };
-
-  const stopTimer = async () => {
-    setIsIntervalRunning(false);
-    setTimerState("idle");
-    setLocationStarted(false);
-    TaskManager.isTaskRegisteredAsync(LOCATION_TRACKING).then((tracking) => {
-      if (tracking) {
-        Location.stopLocationUpdatesAsync(LOCATION_TRACKING);
-      }
-    });
-  };
-
-  const handleSignOut= async () => {
-    try {
-      // Sign the user out
-      await auth.signOut();
-
-      console.log('User signed out successfully.');
-    } catch (error) {
-      console.error('Error signing out:', error.message);
-    }
-  };
-  
-
- 
   const formatTime = (seconds) => {
     const minutes = Math.floor(seconds / 60);
     const remainingSeconds = seconds % 60;
@@ -425,8 +519,9 @@ const IntervalTimer = () => {
             }
             isAudioOn(false);
           }
-    
-          navigation.navigate("WorkoutSelection");
+
+            navigation.navigate("WorkoutSelection");
+  
       }
        catch (error) {
         console.error('Error saving workout to user profile:', error);
@@ -545,21 +640,42 @@ const IntervalTimer = () => {
   navigation.navigate("SignUp")
   }
 
-
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>{ workoutTitle }</Text>
-      <Text style={styles.title}>{'Target steps per minute: ' + bpm + 'bpm'}</Text>
-      <Text style={styles.title}>{currentInterval + ':'} { currentIndex + 1} {'/' + intervalCount }</Text>
+ <View style={styles.dataBox}>
+  <View style={styles.quadrant}>
+    <View style={styles.topLeft}>
+      <Text style={styles.labelText}>{'Total Time remaining'}</Text>
+      <Text style={styles.dataText}>{formatTime(totalTimeRemaining)}</Text>
+      </View>
+    <View style={[styles.bottomRight]}>
+    <Text style={styles.labelText}>{'steps per minute             '}</Text>
+      <Text style={styles.dataText}>{workoutType===("elliptical"||"bike")? (bpm/2) : bpm} {workoutType===("elliptical"||"bike")? "rpm": "bpm"}</Text></View>
+    <View style={styles.topRight}>
+    <Text style={styles.labelText}>{'Section Time remaining'}</Text>
+      <Text style={styles.dataText}>{formatTime(remainingTime)}</Text></View>
+    <View style={styles.bottomLeft}>
+    <Text style={styles.labelText}>{'Efforts remaining'}</Text>
+      <Text style={styles.dataText}>{intervalsRemaining}</Text></View>
+  </View> 
+</View>
+     {/* <Text style={[styles.title, { textTransform: 'capitalize'}]} >{ workoutTitle }</Text>
+      <Text style={styles.title}>{'Target Steps Per Minute: ' + bpm + 'bpm'}</Text>
+      { (currentIntervalCount>0&&currentIntervalCount<=totalIntervalCount) ? (<>
+        <Text style={styles.title}>{currentInterval + ':'} { currentIntervalCount} {'/' + totalIntervalCount }</Text>
+      </> ):(<>
+        <Text style={styles.title}>{currentInterval}</Text>
+      </>
+      ) } */}
       <CircleProgressBar
         percent={percent}
         radius={70}
         borderWidth={20}
-        color={currentInterval === "Run" ? "#BCC2E4" : "#EEA4CE"}
+        color={currentInterval === effortIntervalText ? "#BCC2E4" : "#EEA4CE"}
         shadowColor="#F7F8F8"
-      />
+      /> 
       <Text style={styles.title}>
-        {formatTime(remainingTime)} remaining
+        {currentInterval}
       </Text>
       <View style={[styles.buttons, {opacity: workoutComplete ? 0 : 100}]}>
         {renderButtons()}
@@ -587,11 +703,14 @@ const IntervalTimer = () => {
       )} */}
       { isIntervalRunning ? (<>
         <View style={styles.locationInfo}>
-          <Text style={styles.whiteCardLong}>{narration}</Text>
+          <View style={styles.whiteCardLong}>
+            <Text>{currentInterval + "!"}</Text>
+            <Text style={{textAlign: 'center'}}> {narration}</Text>
+            </View>
         </View>
         </>
-      ) : <></>
-}
+      ) : <></>}
+
       {workoutComplete ?  (
       <Modal style={[{opacity: workoutComplete ? 100 : 0},{backgroundColor: '#D9D9D9'}]}>  
       <View style={styles.badge}>
@@ -637,7 +756,7 @@ const IntervalTimer = () => {
     </View>
     </View>
   );
-};
+  }
 
 
 
@@ -655,11 +774,71 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     marginTop: 20,
   },
+  dataBox: {
+    flexDirection: 'row',
+    marginTop: -30,
+    marginBottom: 20,
+    marginLeft: 20,
+    alignSelf: 'center',
+    width: 300,
+  },
   locationInfo: {
     flexDirection: 'row',
     marginTop: -30,
     marginLeft: 20, 
     alignSelf: 'center'
+  },
+  
+  quadrant: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 0,
+    marginRight: 20,
+    height: 140,
+    padding: 18,
+    borderRadius: 20,
+    backgroundColor: '#FFFFFF',
+    elevation: 4,
+    shadowOffset: {
+      width: 0,
+      height: 10,
+    },
+    shadowOpacity: 22,
+  },
+  
+  topLeft: {
+    position: 'absolute',
+    left: 10,
+    top: 10,
+  },
+  
+  topRight: {
+    position: 'absolute',
+    right: 10,
+    top: 10,
+
+  },
+  
+  bottomLeft: {
+    position: 'absolute',
+    left: 10,
+    bottom: 2,
+
+  },
+  
+  bottomRight: {
+    position: 'absolute',
+    right: 10,
+    bottom: 2,
+  },
+  dataText: {
+    fontFamily: 'Poppins_400Regular',
+    fontSize: 30,
+  },
+  labelText: {
+    fontFamily: 'Poppins_400Regular',
+    fontSize: 10,
   },
   title: {
     fontFamily: 'Poppins_400Regular',
@@ -755,8 +934,30 @@ const styles = StyleSheet.create({
     badge: {
       marginTop: 90,
       alignItems: 'center',
+    },  
+    quadrant: {
+      flex: 1,
+      justifyContent: 'center',
+      alignItems: 'center',
+      marginBottom: 0,
+      marginRight: 20,
+      width: 140, // Adjust the width as needed
+      height: 140,
+      padding: 18,
+      borderRadius: 20,
+      backgroundColor: '#FFFFFF',
+      elevation: 4,
+      shadowOffset: {
+        width: 0,
+        height: 10,
+      },
+      shadowOpacity: 22,
+    },
 
-    }
+    quadrantText: {
+      fontFamily: 'Poppins_400Regular',
+      textAlign: 'center',
+    },
    
 });
 

@@ -32,7 +32,11 @@ const SignInScreen = () => {
     } catch (error) {
       Alert.alert('Sign In Failed', error.message);
     }
-  }; 
+  };
+  
+  const navigateToSignUp = async () => {
+  navigation.navigate('SignUp');
+  }
 
   const handleForgottenPassword = async (email) => {
     navigation.navigate('ForgottenPassword');
@@ -75,6 +79,10 @@ const SignInScreen = () => {
     <Text style={commonStyles.buttonText}><MaterialCommunityIcons name="login" size={24} color="white" />  {"Login"}</Text>   
 </LinearGradient>
 </TouchableOpacity>
+<Text style={styles.text}>{'Don\'t have an account?'}</Text>
+    <Text style={styles.loginText} selectionColor={'#C58BF2'} onPress={navigateToSignUp}>
+      {"Create Account"}
+    </Text>
     </View>
   );
 };
@@ -126,7 +134,19 @@ const styles = StyleSheet.create({
     fontSize: 25,
     color: '#C58BF2',
     marginBottom: 20,
-  }
+  },
+  text: {
+    fontFamily: 'Poppins_400Regular',
+    marginRight: 5, // Adjust the spacing between the texts
+    flexWrap: 'wrap',
+    alignSelf: 'center',
+    marginTop: 20,
+  },
+  loginText: {
+    fontFamily: 'Poppins_400Regular',
+    color: '#C58BF2',
+   // marginTop: 20, // Adjust the marginTop as needed
+  },
 });
 
 export default SignInScreen;
